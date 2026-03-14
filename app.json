@@ -75,8 +75,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2f7457ed-7c20-4c4a-8bb4-a78bef5208b9"
+        "projectId": "33f697c7-1ae7-4264-906c-4dc4cd48ef40"
       }
-    }
+    },
+    "owner": "gamanext"
   }
 }
