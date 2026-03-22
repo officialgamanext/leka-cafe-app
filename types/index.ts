@@ -125,3 +125,12 @@ export enum Roles {
   OWNER = "owner",
   STAFF = "staff",
 }
+
+export interface Staff {
+  id: string;
+  name: string;
+  mobile: string;
+  role: Roles.STAFF;
+  tenantId: string;
+  createdAt: string;
+}

@@ -450,6 +450,12 @@ export default function ProfileScreen() {
               onPress={handleSwitchBusiness}
             />
             <MenuItem
+              icon="people-outline"
+              label="Staff"
+              subtitle="Manage your staff accounts"
+              onPress={() => router.push("/staff")}
+            />
+            <MenuItem
               icon="grid-outline"
               label="Categories"
               subtitle="Manage your categories"
