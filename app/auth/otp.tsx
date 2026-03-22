@@ -20,10 +20,11 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 export default function OTPScreen() {
+  const insets = useSafeAreaInsets();
   const { mobile } = useLocalSearchParams<{ mobile: string }>();
   const { login } = useAuth();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -117,7 +118,8 @@ export default function OTPScreen() {
   const otpComplete = otp.every((digit) => digit !== "");
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
 
       <KeyboardAvoidingView
@@ -212,7 +214,7 @@ export default function OTPScreen() {
           <Text style={styles.changeNumberText}>Change mobile number</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

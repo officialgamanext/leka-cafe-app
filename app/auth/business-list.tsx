@@ -28,7 +28,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Country options with flags
 const COUNTRIES = [
@@ -38,6 +38,7 @@ const COUNTRIES = [
 ];
 
 export default function BusinessListScreen() {
+  const insets = useSafeAreaInsets();
   const {
     user,
     selectBusiness,
@@ -260,7 +261,8 @@ export default function BusinessListScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
         <StatusBar
           barStyle="dark-content"
           backgroundColor={BrandColors.white}
@@ -536,7 +538,7 @@ export default function BusinessListScreen() {
             </SafeAreaView>
           </TouchableWithoutFeedback>
         </Modal>
-      </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
   );
 }

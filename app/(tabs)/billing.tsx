@@ -1,8 +1,8 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useBilling } from "@/context/BillingContext";
@@ -11,16 +11,16 @@ import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    Modal,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BLEPrinter } from "react-native-thermal-receipt-printer-image-qr";
@@ -139,13 +139,17 @@ export default function BillingScreen() {
       let billText = "";
 
       // Cafe Name and Address
-      billText += "<C><B>" + (currentBusiness?.name || "CAFE") + "</B></C>\n";
+      billText += "<C>" + (currentBusiness?.name || "CAFE") + "</C>\n";
       const address = currentBusiness?.address;
       const fullAddress = address
         ? `${address.line1 || ""} ${address.line2 || ""}\n${address.city || ""}, ${address.state || ""} ${address.postalCode || ""}`
         : "";
       if (fullAddress.trim()) {
-        billText += `<C>${fullAddress.trim()}</C>\n`;
+        fullAddress.split("\n").forEach((line) => {
+          if (line.trim()) {
+            billText += `<C>${line.trim()}</C>\n`;
+          }
+        });
       }
       if (currentBusiness?.leagalInfo?.gstNumber) {
         billText += `<C>GST: ${currentBusiness.leagalInfo.gstNumber}</C>\n`;
@@ -276,7 +280,9 @@ export default function BillingScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
+      <View
+        style={{ height: insets.top, backgroundColor: BrandColors.white }}
+      />
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
 
       {/* Header */}

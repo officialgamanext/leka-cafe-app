@@ -2,25 +2,9 @@ import apiClient from "@/api/client";
 import { APIEndpoints } from "@/constants/apiEndpoint";
 import { AuthState, Business, User } from "@/types";
 import { router } from "expo-router";
-import * as SecureStore from 'expo-secure-store';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { Platform } from "react-native";
-export const AUTH_STATE_KEY = 'auth_state'
-export async function SecureStoreSave(key: string, value: string) {
-  if (Platform.OS === 'web') {
-    localStorage.setItem(key, value);
-    return;
-  } 
-  await SecureStore.setItemAsync(key, value);
-}
+import { AUTH_STATE_KEY, SecureStoreGet, SecureStoreSave } from "@/utils/storage";
 
-export async function SecureStoreGet(key: string) {
-  if (Platform.OS === 'web') {
-    return localStorage.getItem(key);
-  }
-  let result = await SecureStore.getItemAsync(key);
-  return result;
-}
 
 interface AuthContextType extends AuthState {
   login: (user: User, token?: string, refreshToken? : string) => void;

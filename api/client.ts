@@ -1,5 +1,5 @@
 import { APIEndpoints } from '@/constants/apiEndpoint';
-import { AUTH_STATE_KEY, SecureStoreGet, SecureStoreSave } from '@/context/AuthContext';
+import { AUTH_STATE_KEY, SecureStoreGet, SecureStoreSave } from '@/utils/storage';
 import { AuthState } from '@/types';
 import axios from 'axios';
 import { router } from 'expo-router';
