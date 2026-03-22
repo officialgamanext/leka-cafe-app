@@ -256,7 +256,7 @@ export default function BillingScreen() {
       <TouchableOpacity
         style={[styles.menuItem, inBill && styles.menuItemSelected]}
         onPress={() => handleAddItem(item)}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
       >
         <View style={styles.menuItemImage}>
           <Image
@@ -264,18 +264,21 @@ export default function BillingScreen() {
             style={{ width: 28, height: 28 }}
             resizeMode="contain"
           />
+          {inBill && (
+             <View style={styles.selectionIndicator}>
+                <Ionicons name="checkmark-circle" size={24} color={BrandColors.white} />
+                <View style={styles.selectionQuantity}>
+                   <Text style={styles.selectionQuantityText}>{inBill.quantity}</Text>
+                </View>
+             </View>
+          )}
         </View>
         <View style={styles.menuItemInfo}>
-          <Text style={styles.menuItemName} numberOfLines={1}>
+          <Text style={[styles.menuItemName, inBill && styles.menuItemNameActive]} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={styles.menuItemPrice}>Rs.{item.price}</Text>
+          <Text style={[styles.menuItemPrice, inBill && styles.menuItemPriceActive]}>Rs.{item.price}</Text>
         </View>
-        {inBill && (
-          <View style={styles.quantityBadge}>
-            <Text style={styles.quantityText}>{inBill.quantity}</Text>
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -647,7 +650,17 @@ const styles = StyleSheet.create({
   },
   menuItemSelected: {
     borderColor: BrandColors.primary,
-    backgroundColor: BrandColors.primary + "05",
+    backgroundColor: BrandColors.white,
+    ...Platform.select({
+      ios: {
+        shadowColor: BrandColors.primary,
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   menuItemImage: {
     width: "100%",
@@ -659,6 +672,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     borderWidth: 1,
     borderColor: BrandColors.gray[100],
+    overflow: "visible", // To allow badge to overflow slightly if needed
   },
   menuItemInfo: {
     marginTop: Spacing.xs,
@@ -668,11 +682,40 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: BrandColors.gray[800],
   },
+  menuItemNameActive: {
+    color: BrandColors.primary,
+    fontWeight: "800",
+  },
   menuItemPrice: {
     fontSize: FontSizes.md,
     fontWeight: "600",
     color: BrandColors.primary,
     marginTop: 2,
+  },
+  menuItemPriceActive: {
+    color: BrandColors.primaryDark,
+    fontWeight: "800",
+  },
+  selectionIndicator: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BrandColors.primary,
+    borderRadius: BorderRadius.full,
+    paddingRight: 8,
+    paddingLeft: 2,
+    paddingVertical: 2,
+    ...Shadows.md,
+  },
+  selectionQuantity: {
+    marginLeft: 4,
+  },
+  selectionQuantityText: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: BrandColors.white,
   },
   quantityBadge: {
     position: "absolute",

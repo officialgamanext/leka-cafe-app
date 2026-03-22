@@ -94,14 +94,14 @@ export default function DashboardScreen() {
              <View style={styles.statsIconBox}>
                 <Ionicons name="wallet-outline" size={20} color={BrandColors.white} />
              </View>
-             <Text style={styles.statsValueMain}>₹{data.totalSalesAmount.toLocaleString()}</Text>
+             <Text style={styles.statsValueMain}>₹{data.totalSalesAmount?.toLocaleString() || "0"}</Text>
              <Text style={styles.statsLabelMain}>Net Revenue Today</Text>
           </View>
           <View style={styles.statsCard}>
              <View style={[styles.statsIconBox, { backgroundColor: BrandColors.primary + "10" }]}>
                 <Ionicons name="receipt-outline" size={20} color={BrandColors.primary} />
              </View>
-             <Text style={styles.statsValueSub}>{data.todaysOrdersCount}</Text>
+             <Text style={styles.statsValueSub}>{data.todaysOrdersCount || "0"}</Text>
              <Text style={styles.statsLabelSub}>Successful Orders</Text>
           </View>
         </View>
@@ -189,13 +189,13 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
             
-            {data.todaysOrderData.length === 0 ? (
+            {!data.todaysOrderData || data.todaysOrderData.length === 0 ? (
                <View style={styles.emptyState}>
                   <Ionicons name="hourglass-outline" size={32} color={BrandColors.gray[200]} />
                   <Text style={styles.emptyStateText}>Waiting for first order of the day...</Text>
                </View>
             ) : (
-              data.todaysOrderData.slice(0, 3).map((order) => (
+              data.todaysOrderData.slice(0, 3).map((order: any) => (
                 <View key={order.id} style={styles.logItem}>
                   <View style={styles.logIconWrapper}>
                     <Ionicons name="checkmark-circle" size={18} color={BrandColors.success} />
