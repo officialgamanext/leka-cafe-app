@@ -2,6 +2,7 @@ import {
   BorderRadius,
   BrandColors,
   FontSizes,
+  Shadows,
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -11,6 +12,7 @@ import { router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -22,351 +24,195 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { currentBusiness, isAuthenticated } = useAuth();
-  const { data: dashboardData, isLoading } = useApiDashboard({
-    tenantId: currentBusiness?.id,
-    enabled: !!currentBusiness?.id && isAuthenticated,
-  });
+  const { currentBusiness } = useAuth();
+  const { data, isLoading, refetch } = useApiDashboard({ tenantId: currentBusiness?.id || "" });
 
-  const defaultData = {
-    totalSalesAmount: 15680,
-    todaysOrdersCount: 42,
-    averageOrderAmount: 373,
-    topSellerItem: {
-      productName: "Cappuccino",
-    },
-    todaysOrderData: [
-      {
-        id: "1",
-        items: [{ name: "item" }],
-        totalAmount: 520,
-        createdAt: "2 min ago",
-      },
-      {
-        id: "2",
-        items: [{ name: "item" }],
-        totalAmount: 340,
-        createdAt: "15 min ago",
-      },
-    ],
+  const subInfo = {
+    label: "Professional Plan",
+    icon: "shield-checkmark",
+    color: BrandColors.success,
   };
 
-  const data = dashboardData || defaultData;
-
-  const getSubscriptionStatusInfo = () => {
-    const status: unknown = currentBusiness?.subscription?.status;
-    const isSubscriptionActive =
-      typeof status === "boolean"
-        ? status
-        : typeof status === "string"
-          ? status.toLowerCase() === "true"
-          : status instanceof Boolean
-            ? status.valueOf()
-            : false;
-
-    if (!isSubscriptionActive) {
-      return {
-        label: "Inactive",
-        color: BrandColors.danger,
-      };
-    }
-
-    const endDateValue = currentBusiness?.subscription?.endDate;
-    if (endDateValue) {
-      const endDate = new Date(endDateValue);
-      if (!Number.isNaN(endDate.getTime())) {
-        const oneMonthFromNow = new Date();
-        oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-
-        if (endDate < oneMonthFromNow) {
-          return {
-            label: "Expiring Soon",
-            color: BrandColors.warning,
-          };
-        }
-      }
-    }
-
-    return {
-      label: "Active",
-      color: BrandColors.success,
-    };
-  };
-
-  const subscriptionStatusInfo = getSubscriptionStatusInfo();
-
-  // Simple Mock Custom Chart Bars data
   const customBarData = [
-    { label: "Coffee", value: 65, color: BrandColors.primary },
-    { label: "Tea", value: 40, color: BrandColors.accent },
-    { label: "Snacks", value: 80, color: BrandColors.warning || "#F59E0B" },
-    { label: "Meals", value: 30, color: BrandColors.danger },
+    { label: "Mon", value: 450, color: BrandColors.primary },
+    { label: "Tue", value: 320, color: BrandColors.primaryLight },
+    { label: "Wed", value: 580, color: BrandColors.primary },
+    { label: "Thu", value: 290, color: BrandColors.primaryLight },
+    { label: "Fri", value: 640, color: BrandColors.accent },
+    { label: "Sat", value: 890, color: BrandColors.accent },
+    { label: "Sun", value: 720, color: BrandColors.accent },
   ];
-  const maxBarValue = Math.max(...customBarData.map((d) => d.value));
+  const maxBarValue = Math.max(...customBarData.map((b) => b.value));
 
-  if (isLoading) {
+  if (isLoading || !data) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingHorizontal: Spacing.lg }]}>
-        <View style={styles.skeletonHeader} />
-        <View style={styles.skeletonStatsContainer}>
-          <View style={styles.skeletonCard} />
-          <View style={styles.skeletonCard} />
-        </View>
-        <View style={styles.skeletonChartPlaceholder} />
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <ActivityIndicator size="large" color={BrandColors.primary} />
-          <Text style={{ marginTop: 10, color: BrandColors.gray[500] }}>
-            Loading Dashboard...
-          </Text>
-        </View>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={BrandColors.primary} />
+        <Text style={styles.loadingText}>Fetching your dashboard...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={BrandColors.primary} />
       <View style={{ height: insets.top, backgroundColor: BrandColors.primary }} />
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={BrandColors.primary}
-      />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
+      {/* High-End Header Banner */}
+      <View style={styles.banner}>
+        <View style={styles.bannerHeader}>
           <View>
-            <Text style={styles.businessName}>
-              {currentBusiness?.name || "CafeBill"}
-            </Text>
-            <Text style={styles.dateText}>Welcome back, Admin</Text>
+            <Text style={styles.greetingText}>Good Day,</Text>
+            <Text style={styles.businessNameText}>{currentBusiness?.name || "Your Cafe"}</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons
-              name="notifications-outline"
-              size={24}
-              color={BrandColors.white}
-            />
-            <View style={styles.notificationBadge} />
+          <TouchableOpacity 
+            style={styles.notifBadge}
+            onPress={() => router.push("/profile")}
+          >
+            <Ionicons name="notifications-outline" size={24} color={BrandColors.white} />
+            <View style={styles.dot} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.subPill}>
+          <View style={[styles.subDot, { backgroundColor: subInfo.color }]} />
+          <Text style={styles.subText}>Premium Subscription: Active</Text>
+          <TouchableOpacity onPress={() => router.push("/profile")}>
+            <Text style={styles.renewText}>Manage</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <ScrollView 
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={BrandColors.primary} />}
       >
-        <View style={styles.subscriptionRow}>
-          <View style={styles.subscriptionMeta}>
-            <Text style={styles.subscriptionText}>
-              Subscription:{" "}
-              <View
-                style={[
-                  styles.subscriptionStatusDot,
-                  { backgroundColor: subscriptionStatusInfo.color },
-                ]}
-              />{" "}
-              {subscriptionStatusInfo.label}
-            </Text>
+        {/* Modern Statistics Cards */}
+        <View style={styles.statsGrid}>
+          <View style={[styles.statsCard, styles.statsCardPrimary]}>
+             <View style={styles.statsIconBox}>
+                <Ionicons name="wallet-outline" size={20} color={BrandColors.white} />
+             </View>
+             <Text style={styles.statsValueMain}>₹{data.totalSalesAmount.toLocaleString()}</Text>
+             <Text style={styles.statsLabelMain}>Net Revenue Today</Text>
           </View>
-          <TouchableOpacity
-            style={styles.renewButton}
-            onPress={() => router.navigate("/subscriptions")}
-            activeOpacity={0.85}
-          >
-            <Ionicons
-              name="refresh-outline"
-              size={14}
-              color={BrandColors.primary}
-            />
-            <Text style={styles.renewButtonText}>Renew / Extend</Text>
-          </TouchableOpacity>
-        </View>
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => router.navigate("/billing")}
-            >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: BrandColors.primary + "15" },
-                ]}
-              >
-                <Ionicons
-                  name="add-circle-outline"
-                  size={28}
-                  color={BrandColors.primary}
-                />
-              </View>
-              <Text style={styles.actionText}>New Bill</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => router.navigate("/bills")}
-            >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: BrandColors.accent + "15" },
-                ]}
-              >
-                <Ionicons
-                  name="list-outline"
-                  size={28}
-                  color={BrandColors.accent}
-                />
-              </View>
-              <Text style={styles.actionText}>All Bills</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => router.navigate("/reports")}
-            >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: BrandColors.success + "15" },
-                ]}
-              >
-                <Ionicons
-                  name="bar-chart-outline"
-                  size={28}
-                  color={BrandColors.success}
-                />
-              </View>
-              <Text style={styles.actionText}>Reports</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => router.navigate("/categories")}
-            >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: BrandColors.info + "15" },
-                ]}
-              >
-                <Ionicons
-                  name="grid-outline"
-                  size={28}
-                  color={BrandColors.info}
-                />
-              </View>
-              <Text style={styles.actionText}>Categories</Text>
-            </TouchableOpacity>
+          <View style={styles.statsCard}>
+             <View style={[styles.statsIconBox, { backgroundColor: BrandColors.primary + "10" }]}>
+                <Ionicons name="receipt-outline" size={20} color={BrandColors.primary} />
+             </View>
+             <Text style={styles.statsValueSub}>{data.todaysOrdersCount}</Text>
+             <Text style={styles.statsLabelSub}>Successful Orders</Text>
           </View>
         </View>
 
-        {/* Stats Cards */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Overview Snapshot</Text>
-          <View style={styles.statsContainer}>
-            <View style={[styles.statsCard, styles.primaryCard]}>
-              <View style={styles.statsIconContainer}>
-                <Ionicons
-                  name="cash-outline"
-                  size={24}
-                  color={BrandColors.white}
-                />
-              </View>
-              <Text style={styles.statsValue}>
-                ₹{data.totalSalesAmount.toLocaleString()}
-              </Text>
-              <Text style={styles.statsLabel}>Today's Revenue</Text>
-            </View>
-
-            <View style={styles.statsCard}>
-              <View style={[styles.statsIconContainer, styles.accentIcon]}>
-                <Ionicons
-                  name="receipt-outline"
-                  size={24}
-                  color={BrandColors.accent}
-                />
-              </View>
-              <Text style={styles.statsValueDark}>
-                {data.todaysOrdersCount}
-              </Text>
-              <Text style={styles.statsLabelDark}>Orders Today</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Custom JS Bar Chart Area */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Category Sales</Text>
-          <View style={styles.chartContainer}>
-            <View style={styles.customBarsWrapper}>
-              {customBarData.map((bar, index) => {
-                const heightPercentage = (bar.value / maxBarValue) * 100;
-                return (
-                  <View key={index} style={styles.customBarColumn}>
-                    <Text style={styles.customBarValue}>{bar.value}</Text>
-                    <View style={styles.customBarTrack}>
-                      <View
-                        style={[
-                          styles.customBarFill,
-                          {
-                            height: `${heightPercentage}%`,
-                            backgroundColor: bar.color,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.customBarLabel}>{bar.label}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-
-        {/* Recent Orders */}
+        {/* Professional Business Tools Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Orders</Text>
-            <TouchableOpacity onPress={() => router.navigate("/bills")}>
-              <Text style={styles.viewAllText}>View All</Text>
-            </TouchableOpacity>
+            <View>
+              <Text style={styles.sectionTitle}>Business Arsenal</Text>
+              <Text style={styles.sectionSubtitle}>Core tools for your daily operations</Text>
+            </View>
           </View>
-
-          {data.todaysOrderData.map((order) => (
-            <TouchableOpacity key={order.id} style={styles.orderCard}>
-              <View style={styles.orderIcon}>
-                <Ionicons
-                  name="receipt"
-                  size={20}
-                  color={BrandColors.primary}
-                />
-              </View>
-              <View style={styles.orderInfo}>
-                <Text style={styles.orderTitle}>Order #{order.id}</Text>
-                <Text style={styles.orderMeta}>
-                  {order.items?.length || 1} items • {order.createdAt}
-                </Text>
-              </View>
-              <View style={styles.orderAmount}>
-                <Text style={styles.orderTotal}>₹{order.totalAmount}</Text>
-                <View style={styles.statusBadge}>
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={14}
-                    color={BrandColors.success}
-                  />
+          
+          <View style={styles.toolsGrid}>
+            {[
+              {
+                label: "Billing",
+                icon: "add-circle",
+                path: "/billing",
+                color: BrandColors.primary,
+              },
+              {
+                label: "History",
+                icon: "receipt",
+                path: "/bills",
+                color: BrandColors.accent,
+              },
+              {
+                label: "Catalog",
+                icon: "cafe",
+                path: "/items",
+                color: BrandColors.success,
+              },
+              {
+                label: "Insights",
+                icon: "analytics",
+                path: "/reports",
+                color: BrandColors.info,
+              },
+            ].map((tool, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.toolCard}
+                onPress={() => router.push(tool.path as any)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.toolIconFrame, { backgroundColor: tool.color + "08" }]}>
+                  <Ionicons name={tool.icon as any} size={26} color={tool.color} />
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+                <Text style={styles.toolLabelText}>{tool.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        <View style={{ height: Spacing.xxl * 2 }} />
+        {/* Visual Analytics */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Weekly Performance</Text>
+            <View style={styles.performanceBadge}>
+                <Ionicons name="trending-up" size={12} color={BrandColors.success} />
+                <Text style={styles.performanceBadgeText}>+12.4%</Text>
+            </View>
+          </View>
+          <View style={styles.analyticsSheet}>
+             <View style={styles.barGraph}>
+                {customBarData.map((bar, i) => (
+                  <View key={i} style={styles.graphColumn}>
+                    <View style={styles.graphTrack}>
+                      <View style={[styles.graphFill, { height: `${(bar.value/maxBarValue)*100}%`, backgroundColor: bar.color }]} />
+                    </View>
+                    <Text style={styles.graphLabel}>{bar.label}</Text>
+                  </View>
+                ))}
+             </View>
+          </View>
+        </View>
+
+        {/* Live Transaction Stream */}
+        <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Stream</Text>
+              <TouchableOpacity onPress={() => router.push("/bills")}>
+                <Text style={styles.actionText}>View All</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {data.todaysOrderData.length === 0 ? (
+               <View style={styles.emptyState}>
+                  <Ionicons name="hourglass-outline" size={32} color={BrandColors.gray[200]} />
+                  <Text style={styles.emptyStateText}>Waiting for first order of the day...</Text>
+               </View>
+            ) : (
+              data.todaysOrderData.slice(0, 3).map((order) => (
+                <View key={order.id} style={styles.logItem}>
+                  <View style={styles.logIconWrapper}>
+                    <Ionicons name="checkmark-circle" size={18} color={BrandColors.success} />
+                  </View>
+                  <View style={styles.logBody}>
+                     <Text style={styles.logTitle}>Bill #{(order.id || "000").slice(-6)}</Text>
+                     <Text style={styles.logMeta}>{order.createdAt}</Text>
+                  </View>
+                  <View style={styles.logPriceBox}>
+                    <Text style={styles.logPrice}>₹{order.totalAmount}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+        </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -377,313 +223,309 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BrandColors.gray[50],
   },
-  header: {
-    backgroundColor: BrandColors.primary,
-    paddingBottom: Spacing.lg,
-    borderBottomLeftRadius: BorderRadius.xl,
-    borderBottomRightRadius: BorderRadius.xl,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: BrandColors.white,
   },
-  headerContent: {
+  loadingText: {
+    marginTop: Spacing.md,
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[400],
+    fontWeight: "600",
+  },
+  banner: {
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    borderBottomLeftRadius: BorderRadius.xxl,
+    borderBottomRightRadius: BorderRadius.xxl,
+    ...Shadows.md,
+  },
+  bannerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.md,
+    marginTop: Spacing.md,
   },
-  businessName: {
-    fontSize: FontSizes.xxl,
-    fontWeight: "700",
-    color: BrandColors.white,
-  },
-  dateText: {
-    fontSize: FontSizes.md,
-    color: BrandColors.white + "80",
-    marginTop: Spacing.xs,
-  },
-  subscriptionMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
-    alignSelf: "flex-start",
-    backgroundColor: BrandColors.white + "26",
-    borderWidth: 1,
-    borderColor: BrandColors.white + "3D",
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 5,
-  },
-  subscriptionText: {
+  greetingText: {
     fontSize: FontSizes.sm,
-    color: BrandColors.black,
+    color: BrandColors.white,
+    opacity: 0.8,
     fontWeight: "600",
   },
-  subscriptionStatusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: BrandColors.white,
+  businessNameText: {
+    fontSize: FontSizes.xxl,
+    color: BrandColors.white,
+    fontWeight: "900",
+    letterSpacing: -0.8,
   },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: BrandColors.white + "20",
+  notifBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.white + "15",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: BrandColors.white + "10",
   },
-  notificationBadge: {
+  dot: {
     position: "absolute",
-    top: 10,
-    right: 10,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    top: 14,
+    right: 14,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: BrandColors.accent,
     borderWidth: 2,
     borderColor: BrandColors.primary,
   },
-  scrollContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-    paddingTop: 0,
-  },
-  subscriptionRow: {
+  subPill: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.sm,
-  },
-  renewButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    backgroundColor: BrandColors.white,
-    borderWidth: 1,
-    borderColor: BrandColors.primary + "33",
+    marginTop: Spacing.xl,
+    backgroundColor: BrandColors.white + "10",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 6,
+    alignSelf: "flex-start",
   },
-  renewButtonText: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-    color: BrandColors.primary,
+  subDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 8,
   },
-  statsContainer: {
+  subText: {
+    fontSize: 10,
+    color: BrandColors.white,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  renewText: {
+    fontSize: 10,
+    color: BrandColors.white,
+    fontWeight: "900",
+    marginLeft: 12,
+    textDecorationLine: "underline",
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.xl,
+  },
+  statsGrid: {
     flexDirection: "row",
     gap: Spacing.md,
-    marginBottom: Spacing.md,
+    marginTop: -Spacing.xl,
   },
   statsCard: {
     flex: 1,
     backgroundColor: BrandColors.white,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    ...Shadows.md,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
   },
-  primaryCard: {
+  statsCardPrimary: {
     backgroundColor: BrandColors.primary,
+    borderColor: BrandColors.primary,
   },
-  statsIconContainer: {
-    width: 44,
-    height: 44,
+  statsIconBox: {
+    width: 38,
+    height: 38,
     borderRadius: BorderRadius.md,
     backgroundColor: BrandColors.white + "20",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
-  accentIcon: {
-    backgroundColor: BrandColors.accent + "15",
-  },
-  statsValue: {
+  statsValueMain: {
     fontSize: FontSizes.xxl,
-    fontWeight: "700",
+    fontWeight: "900",
     color: BrandColors.white,
+    letterSpacing: -0.5,
   },
-  statsValueDark: {
-    fontSize: FontSizes.xxl,
+  statsLabelMain: {
+    fontSize: 10,
+    color: BrandColors.white,
+    opacity: 0.8,
+    marginTop: 2,
     fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  statsValueSub: {
+    fontSize: FontSizes.xl,
+    fontWeight: "900",
     color: BrandColors.gray[900],
   },
-  statsLabel: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.white + "80",
-    marginTop: Spacing.xs,
-  },
-  statsLabelDark: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[600],
-    marginTop: Spacing.xs,
+  statsLabelSub: {
+    fontSize: 10,
+    color: BrandColors.gray[400],
+    marginTop: 2,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
   section: {
-    marginTop: Spacing.lg,
+    marginTop: Spacing.xl,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-end",
     marginBottom: Spacing.md,
   },
   sectionTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
-    marginBottom: Spacing.md,
+    letterSpacing: -0.5,
   },
-  viewAllText: {
-    fontSize: FontSizes.md,
+  sectionSubtitle: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[400],
+    fontWeight: "500",
+  },
+  actionText: {
+    fontSize: FontSizes.xs,
+    fontWeight: "800",
     color: BrandColors.primary,
-    fontWeight: "600",
   },
-  actionsContainer: {
+  toolsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    gap: Spacing.md,
   },
-  actionButton: {
-    width: "22%",
-    alignItems: "center",
-  },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: BorderRadius.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.sm,
-  },
-  actionText: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[700],
-    textAlign: "center",
-  },
-  chartContainer: {
+  toolCard: {
+    width: "47.5%",
     backgroundColor: BrandColors.white,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  orderCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: BrandColors.white,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.sm,
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    ...Shadows.sm,
   },
-  orderIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+  toolIconFrame: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
     marginRight: Spacing.md,
   },
-  orderInfo: {
-    flex: 1,
-  },
-  orderTitle: {
-    fontSize: FontSizes.md,
-    fontWeight: "600",
+  toolLabelText: {
+    fontSize: 13,
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
-  orderMeta: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[500],
-    marginTop: 2,
-  },
-  orderAmount: {
-    alignItems: "flex-end",
-  },
-  orderTotal: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    color: BrandColors.gray[900],
-  },
-  statusBadge: {
-    marginTop: Spacing.xs,
-  },
-  customBarsWrapper: {
+  performanceBadge: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-end",
-    height: 180,
-    width: "100%",
-    paddingTop: Spacing.md,
-  },
-  customBarColumn: {
     alignItems: "center",
-    width: 40,
-    height: "100%",
-    justifyContent: "flex-end",
+    backgroundColor: BrandColors.success + "10",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    gap: 4,
   },
-  customBarValue: {
-    fontSize: FontSizes.xs,
-    color: BrandColors.gray[600],
-    marginBottom: Spacing.xs,
-    fontWeight: "600",
+  performanceBadgeText: {
+    fontSize: 10,
+    color: BrandColors.success,
+    fontWeight: "800",
   },
-  customBarTrack: {
-    width: 24,
+  analyticsSheet: {
+    backgroundColor: BrandColors.white,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    ...Shadows.sm,
+  },
+  barGraph: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     height: 120,
-    backgroundColor: BrandColors.gray[100],
-    borderRadius: BorderRadius.sm,
+  },
+  graphColumn: {
+    alignItems: "center",
+    width: 30,
+  },
+  graphTrack: {
+    width: 8,
+    height: 100,
+    backgroundColor: BrandColors.gray[50],
+    borderRadius: BorderRadius.full,
     justifyContent: "flex-end",
     overflow: "hidden",
   },
-  customBarFill: {
+  graphFill: {
     width: "100%",
-    borderTopLeftRadius: BorderRadius.sm,
-    borderTopRightRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.full,
   },
-  customBarLabel: {
-    fontSize: FontSizes.xs,
-    color: BrandColors.gray[700],
-    marginTop: Spacing.xs,
-    textAlign: "center",
+  graphLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: BrandColors.gray[400],
+    marginTop: 8,
   },
-  skeletonHeader: {
-    width: "100%",
-    height: 80,
-    backgroundColor: BrandColors.gray[200],
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.xl,
-  },
-  skeletonStatsContainer: {
+  logItem: {
     flexDirection: "row",
-    gap: Spacing.md,
-    marginBottom: Spacing.xl,
+    alignItems: "center",
+    backgroundColor: BrandColors.white,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.sm,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    ...Shadows.sm,
   },
-  skeletonCard: {
+  logIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.full,
+    backgroundColor: BrandColors.success + "08",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.md,
+  },
+  logBody: {
     flex: 1,
-    height: 100,
-    backgroundColor: BrandColors.gray[200],
-    borderRadius: BorderRadius.lg,
   },
-  skeletonChartPlaceholder: {
-    width: "100%",
-    height: 250,
-    backgroundColor: BrandColors.gray[200],
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.xl,
+  logTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: BrandColors.gray[800],
+  },
+  logMeta: {
+    fontSize: 11,
+    color: BrandColors.gray[400],
+    fontWeight: "500",
+  },
+  logPriceBox: {
+    alignItems: "flex-end",
+  },
+  logPrice: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: BrandColors.gray[900],
+  },
+  emptyState: {
+    padding: Spacing.xxl,
+    alignItems: "center",
+    backgroundColor: BrandColors.white,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    borderStyle: "dashed",
+  },
+  emptyStateText: {
+    color: BrandColors.gray[300],
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: Spacing.md,
   },
 });

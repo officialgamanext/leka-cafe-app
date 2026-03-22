@@ -3,6 +3,7 @@ import {
   BorderRadius,
   BrandColors,
   FontSizes,
+  Shadows,
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -64,7 +65,7 @@ const MenuItem = ({
     <View style={[styles.menuIcon, danger && styles.menuIconDanger]}>
       <Ionicons
         name={icon}
-        size={22}
+        size={20}
         color={danger ? BrandColors.danger : BrandColors.primary}
       />
     </View>
@@ -1003,20 +1004,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: BrandColors.white,
     marginTop: Spacing.md,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
     padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
+    ...Shadows.md,
   },
   businessLogo: {
-    width: 72,
-    height: 72,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: BrandColors.primary + "15",
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.primary + "10",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1031,52 +1030,57 @@ const styles = StyleSheet.create({
   },
   businessAddress: {
     fontSize: FontSizes.sm,
-    color: BrandColors.gray[600],
-    marginTop: Spacing.xs,
+    color: BrandColors.gray[500],
+    marginTop: 2,
+    lineHeight: 18,
   },
   editBusinessButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.full,
+    backgroundColor: BrandColors.gray[50],
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: BrandColors.gray[200],
   },
   section: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.xl,
   },
   sectionTitle: {
     fontSize: FontSizes.sm,
-    fontWeight: "600",
-    color: BrandColors.gray[500],
+    fontWeight: "700",
+    color: BrandColors.gray[400],
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     marginBottom: Spacing.sm,
     marginLeft: Spacing.sm,
   },
   sectionContent: {
     backgroundColor: BrandColors.white,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
+    ...Shadows.sm,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[100],
+    backgroundColor: BrandColors.white,
   },
   menuIcon: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+    backgroundColor: BrandColors.gray[50],
     alignItems: "center",
     justifyContent: "center",
     marginRight: Spacing.md,
   },
   menuIconDanger: {
-    backgroundColor: BrandColors.danger + "15",
+    backgroundColor: BrandColors.danger + "10",
   },
   menuContent: {
     flex: 1,
@@ -1084,31 +1088,33 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: FontSizes.md,
     fontWeight: "600",
-    color: BrandColors.gray[900],
+    color: BrandColors.gray[800],
   },
   menuLabelDanger: {
     color: BrandColors.danger,
   },
   menuSubtitle: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.xs,
     color: BrandColors.gray[500],
     marginTop: 2,
   },
   lastSection: {
-    marginBottom: 0,
+    marginBottom: Spacing.xxl,
   },
   footer: {
     alignItems: "center",
     paddingVertical: Spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[100],
   },
   footerText: {
-    fontSize: FontSizes.md,
-    color: BrandColors.gray[500],
-  },
-  versionText: {
     fontSize: FontSizes.sm,
     color: BrandColors.gray[400],
-    marginTop: Spacing.xs,
+  },
+  versionText: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[300],
+    marginTop: 4,
   },
   businessModalOverlay: {
     flex: 1,

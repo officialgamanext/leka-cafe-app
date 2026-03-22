@@ -2,6 +2,7 @@ import {
   BorderRadius,
   BrandColors,
   FontSizes,
+  Shadows,
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +16,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -46,7 +48,6 @@ export default function StaffScreen() {
       Alert.alert("Error", "Please fill name and mobile number");
       return;
     }
-
     if (newMobile.length !== 10) {
       Alert.alert("Error", "Please enter a valid 10-digit mobile number");
       return;
@@ -77,15 +78,17 @@ export default function StaffScreen() {
         <Text style={styles.staffName}>{item.name}</Text>
         <Text style={styles.staffMobile}>{item.mobile}</Text>
       </View>
-      <View style={styles.staffRole}>
-        <Text style={styles.staffRoleText}>Staff</Text>
+      <View style={styles.staffBadge}>
+        <Text style={styles.staffBadgeText}>Staff</Text>
       </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
       <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
+      
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -93,10 +96,14 @@ export default function StaffScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={BrandColors.gray[900]} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Staff Management</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Team Management</Text>
+          <Text style={styles.headerSubtitle}>Manage your cafe staff</Text>
+        </View>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setShowModal(true)}
+          activeOpacity={0.8}
         >
           <Ionicons name="add" size={24} color={BrandColors.white} />
         </TouchableOpacity>
@@ -107,25 +114,29 @@ export default function StaffScreen() {
         renderItem={renderStaffItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons
               name="people-outline"
               size={64}
-              color={BrandColors.gray[300]}
+              color={BrandColors.gray[200]}
             />
-            <Text style={styles.emptyText}>No staff added yet</Text>
+            <Text style={styles.emptyText}>No team members yet</Text>
           </View>
         }
       />
 
       <Modal visible={showModal} transparent animationType="slide">
-        <View style={styles.modalBg}>
+        <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Staff</Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons name="close" size={24} color={BrandColors.gray[600]} />
+              <View>
+                <Text style={styles.modalTitle}>Add Team Member</Text>
+                <Text style={styles.modalSubtitle}>Enter their professional details</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowModal(false)} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={BrandColors.gray[900]} />
               </TouchableOpacity>
             </View>
 
@@ -133,29 +144,36 @@ export default function StaffScreen() {
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               style={styles.modalBody}
             >
-              <Text style={styles.inputLabel}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter staff name"
-                value={newName}
-                onChangeText={setNewName}
-              />
+              <View style={styles.fieldSection}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Siva Krishna"
+                  placeholderTextColor={BrandColors.gray[400]}
+                  value={newName}
+                  onChangeText={setNewName}
+                />
+              </View>
 
-              <Text style={styles.inputLabel}>Mobile Number</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter 10-digit mobile"
-                value={newMobile}
-                onChangeText={setNewMobile}
-                keyboardType="phone-pad"
-                maxLength={10}
-              />
+              <View style={styles.fieldSection}>
+                <Text style={styles.inputLabel}>Mobile Number</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="00000 00000"
+                  placeholderTextColor={BrandColors.gray[400]}
+                  value={newMobile}
+                  onChangeText={setNewMobile}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                />
+              </View>
 
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={handleAddStaff}
+                activeOpacity={0.8}
               >
-                <Text style={styles.saveButtonText}>Save Staff</Text>
+                <Text style={styles.saveButtonText}>Add to Team</Text>
               </TouchableOpacity>
             </KeyboardAvoidingView>
           </View>
@@ -173,52 +191,65 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
     backgroundColor: BrandColors.white,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
-    justifyContent: "space-between",
+    borderBottomColor: BrandColors.gray[100],
   },
   backButton: {
-    padding: Spacing.xs,
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.gray[50],
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
   },
-  headerTitle: {
-    fontSize: FontSizes.xl,
-    fontWeight: "700",
-    color: BrandColors.gray[900],
+  headerTitleContainer: {
     flex: 1,
     marginLeft: Spacing.md,
   },
+  headerTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "800",
+    color: BrandColors.gray[900],
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[500],
+    fontWeight: "500",
+  },
   addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
     backgroundColor: BrandColors.primary,
     alignItems: "center",
     justifyContent: "center",
+    ...Shadows.sm,
   },
   listContent: {
-    padding: Spacing.lg,
+    padding: Spacing.xl,
   },
   staffCard: {
     flexDirection: "row",
     backgroundColor: BrandColors.white,
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     marginBottom: Spacing.md,
     alignItems: "center",
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    ...Shadows.sm,
   },
   staffIcon: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: BrandColors.primary + "15",
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.primary + "10",
     alignItems: "center",
     justifyContent: "center",
     marginRight: Spacing.md,
@@ -227,24 +258,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   staffName: {
-    fontSize: FontSizes.lg,
-    fontWeight: "600",
+    fontSize: FontSizes.md,
+    fontWeight: "700",
     color: BrandColors.gray[900],
   },
   staffMobile: {
-    fontSize: FontSizes.md,
-    color: BrandColors.gray[600],
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
     marginTop: 2,
+    fontWeight: "500",
   },
-  staffRole: {
-    backgroundColor: BrandColors.gray[100],
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
+  staffBadge: {
+    backgroundColor: BrandColors.gray[50],
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
   },
-  staffRoleText: {
-    fontSize: FontSizes.xs,
-    fontWeight: "600",
+  staffBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
     color: BrandColors.gray[600],
     textTransform: "uppercase",
   },
@@ -253,63 +287,85 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   emptyText: {
-    fontSize: FontSizes.lg,
-    color: BrandColors.gray[400],
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[300],
     marginTop: Spacing.md,
+    fontWeight: "600",
   },
-  modalBg: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: BrandColors.white,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    minHeight: "50%",
+    borderTopLeftRadius: BorderRadius.xxl,
+    borderTopRightRadius: BorderRadius.xxl,
+    paddingBottom: Spacing.xxl,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
+    borderBottomColor: BrandColors.gray[50],
   },
   modalTitle: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
+    fontSize: FontSizes.xl,
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
+  modalSubtitle: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[500],
+    fontWeight: "500",
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.gray[50],
+    alignItems: "center",
+    justifyContent: "center",
+  },
   modalBody: {
-    padding: Spacing.lg,
+    padding: Spacing.xl,
+  },
+  fieldSection: {
+    marginBottom: Spacing.lg,
   },
   inputLabel: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-    color: BrandColors.gray[700],
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.md,
+    fontSize: FontSizes.xs,
+    fontWeight: "800",
+    color: BrandColors.gray[400],
+    marginBottom: Spacing.sm,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   input: {
     backgroundColor: BrandColors.gray[50],
-    borderWidth: 1,
-    borderColor: BrandColors.gray[300],
+    height: 52,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
     fontSize: FontSizes.md,
     color: BrandColors.gray[900],
+    fontWeight: "600",
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[100],
   },
   saveButton: {
     backgroundColor: BrandColors.primary,
-    padding: Spacing.md,
+    height: 56,
     borderRadius: BorderRadius.md,
     alignItems: "center",
-    marginTop: 40,
+    justifyContent: "center",
+    marginTop: Spacing.xl,
+    ...Shadows.md,
   },
   saveButtonText: {
     color: BrandColors.white,
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: FontSizes.lg,
   },
 });

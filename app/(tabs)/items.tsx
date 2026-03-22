@@ -1,45 +1,41 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Shadows,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { useBilling } from "@/context/BillingContext";
 import {
-    useCreateProduct,
-    useDeleteProduct,
-    useUpdateProduct,
+  useCreateProduct,
+  useDeleteProduct,
+  useUpdateProduct,
 } from "@/hooks/use-api-products";
 import { MenuItem } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-
-// const categories = ["Coffee", "Snacks", "Food", "Beverages", "Desserts"];
 
 export default function ItemsScreen() {
   const insets = useSafeAreaInsets();
   const {
     menuItems,
-    addMenuItem,
-    updateMenuItem,
-    deleteMenuItem,
     categoryItems,
   } = useBilling();
   const { currentBusiness } = useAuth();
@@ -50,14 +46,13 @@ export default function ItemsScreen() {
     useCreateProduct();
   const { mutate: updateProduct, isPending: isUpdatingProduct } =
     useUpdateProduct();
-  const { mutate: deleteProduct, isPending: isDeletingProduct } =
+  const { mutate: deleteProduct } =
     useDeleteProduct();
 
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    categoryId: "Coffee",
+    categoryId: "",
     description: "",
     imgUrl: "",
   });
@@ -67,21 +62,19 @@ export default function ItemsScreen() {
   );
 
   const openAddModal = () => {
-    // Check if categories exist
     if (categoryItems.length === 0) {
       Toast.show({
         type: "error",
         text1: "No Categories",
-        text2: "Please create a category first in the Categories section",
+        text2: "Please create a category first",
       });
       return;
     }
-
     setEditingItem(null);
     setFormData({
       name: "",
       price: "",
-      categoryId: categoryItems[0]?.id || "", // Use first category from API
+      categoryId: categoryItems[0]?.id || "",
       description: "",
       imgUrl: "",
     });
@@ -100,44 +93,11 @@ export default function ItemsScreen() {
     setShowModal(true);
   };
 
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "Please enter item name",
-      });
-      return false;
-    }
-    if (!formData.price.trim()) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "Please enter price",
-      });
-      return false;
-    }
-    if (isNaN(parseFloat(formData.price))) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "Price must be a valid number",
-      });
-      return false;
-    }
-    if (!formData.categoryId) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "Please select a category",
-      });
-      return false;
-    }
-    return true;
-  };
-
   const handleSaveItem = () => {
-    if (!validateForm()) return;
+    if (!formData.name.trim() || !formData.price.trim()) {
+      Toast.show({ type: "error", text1: "Validation", text2: "Name and price are required" });
+      return;
+    }
 
     const itemPayload: Omit<MenuItem, "id"> = {
       name: formData.name,
@@ -149,396 +109,192 @@ export default function ItemsScreen() {
     };
 
     if (editingItem) {
-      // Update item
       updateProduct(
-        {
-          tenantId: currentBusiness?.id || "",
-          productId: editingItem.id,
-          product: itemPayload,
-        },
+        { tenantId: currentBusiness?.id || "", productId: editingItem.id, product: itemPayload },
         {
           onSuccess: () => {
-            Toast.show({
-              type: "success",
-              text1: "Success",
-              text2: "Item updated successfully",
-            });
+            Toast.show({ type: "success", text1: "Updated", text2: "Item successfully updated" });
             setShowModal(false);
           },
           onError: (error) => {
-            Toast.show({
-              type: "error",
-              text1: "Error",
-              text2: error.message || "Failed to update item",
-            });
+            Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed update" });
           },
-        },
+        }
       );
     } else {
-      // Create new item
       createProduct(
-        {
-          tenantId: currentBusiness?.id || "",
-          product: itemPayload,
-        },
+        { tenantId: currentBusiness?.id || "", product: itemPayload },
         {
           onSuccess: () => {
-            Toast.show({
-              type: "success",
-              text1: "Success",
-              text2: "Item added successfully",
-            });
+            Toast.show({ type: "success", text1: "Added", text2: "New item added to menu" });
             setShowModal(false);
           },
           onError: (error) => {
-            Toast.show({
-              type: "error",
-              text1: "Error",
-              text2: error.message || "Failed to add item",
-            });
+            Toast.show({ type: "error", text1: "Error", text2: error.message || "Failed add" });
           },
-        },
+        }
       );
     }
   };
 
-  // const handleSave = () => {
-  //   if (!formData.name.trim()) {
-  //     Alert.alert("Error", "Please enter item name");
-  //     return;
-  //   }
-  //   if (!formData.price || isNaN(Number(formData.price))) {
-  //     Alert.alert("Error", "Please enter a valid price");
-  //     return;
-  //   }
-
-  //   if (editingItem) {
-  //     updateMenuItem(editingItem.id, {
-  //       name: formData.name,
-  //       price: Number(formData.price),
-  //       categoryId: formData.categoryId,
-  //       description: formData.description,
-  //       imgUrl: formData.imgUrl,
-  //     });
-  //     Alert.alert("Success", "Item updated successfully");
-  //   } else {
-  //     addMenuItem({
-  //       name: formData.name,
-  //       price: Number(formData.price),
-  //       categoryId: formData.categoryId,
-  //       description: formData.description,
-  //       imgUrl: formData.imgUrl,
-  //       isAvailable: true,
-  //     });
-  //     Alert.alert("Success", "Item added successfully");
-  //   }
-  //   setShowModal(false);
-  // };
-
   const handleDelete = (item: MenuItem) => {
-    Alert.alert(
-      "Delete Item",
-      `Are you sure you want to delete "${item.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            deleteProduct(
-              {
-                tenantId: currentBusiness?.id || "",
-                productId: item.id,
-              },
-              {
-                onSuccess: () => {
-                  Toast.show({
-                    type: "success",
-                    text1: "Success",
-                    text2: "Item deleted successfully",
-                  });
-                },
-                onError: (error) => {
-                  Toast.show({
-                    type: "error",
-                    text1: "Error",
-                    text2: error.message || "Failed to delete item",
-                  });
-                },
-              },
-            );
-          },
+    Alert.alert("Delete Item", `Remove "${item.name}" from menu?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          deleteProduct({ tenantId: currentBusiness?.id || "", productId: item.id }, {
+            onSuccess: () => Toast.show({ type: "success", text1: "Deleted" }),
+          });
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const renderItem = ({ item }: { item: MenuItem }) => (
-    <View style={styles.itemCard}>
-      <View style={styles.itemImageContainer}>
+    <TouchableOpacity 
+      style={styles.card} 
+      onLongPress={() => openEditModal(item)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.cardImage}>
         {item.imgUrl ? (
-          <Image source={{ uri: item.imgUrl }} style={styles.itemImage} />
+          <Image source={{ uri: item.imgUrl }} style={styles.img} />
         ) : (
-          <Ionicons name="cafe" size={32} color={BrandColors.primary} />
+          <Ionicons name="cafe-outline" size={24} color={BrandColors.primary} />
         )}
       </View>
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemCategory}>{item.category}</Text>
-        <Text style={styles.itemPrice}>₹{item.price}</Text>
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.cardType}>{item.category || "General"}</Text>
+        <Text style={styles.cardPrice}>₹{item.price}</Text>
       </View>
-      <View style={styles.itemActions}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => openEditModal(item)}
-        >
-          <Ionicons name="pencil" size={16} color={BrandColors.primary} />
+      <View style={styles.cardActions}>
+        <TouchableOpacity style={styles.actBtn} onPress={() => openEditModal(item)}>
+          <Ionicons name="create-outline" size={18} color={BrandColors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDelete(item)}
-          disabled={isDeletingProduct}
-        >
-          <Ionicons name="trash" size={16} color={BrandColors.danger} />
+        <TouchableOpacity style={[styles.actBtn, { backgroundColor: BrandColors.danger + "05" }]} onPress={() => handleDelete(item)}>
+          <Ionicons name="trash-outline" size={18} color={BrandColors.danger} />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
-
-      {/* Header */}
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
+      
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Menu Items</Text>
-        <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
+        <View>
+          <Text style={styles.headerTitle}>Menu Catalog</Text>
+          <Text style={styles.headerSubtitle}>Manage recipes and items</Text>
+        </View>
+        <TouchableOpacity style={styles.headerAdd} onPress={openAddModal}>
           <Ionicons name="add" size={24} color={BrandColors.white} />
         </TouchableOpacity>
       </View>
 
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={BrandColors.gray[500]} />
-        <TextInput
+      <View style={styles.searchBar}>
+        <Ionicons name="search" size={18} color={BrandColors.gray[400]} />
+        <TextInput 
           style={styles.searchInput}
-          placeholder="Search items..."
+          placeholder="Search by name..."
           placeholderTextColor={BrandColors.gray[400]}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        {searchQuery.length > 0 && (
+        {searchQuery !== "" && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>
-            <Ionicons
-              name="close-circle"
-              size={20}
-              color={BrandColors.gray[400]}
-            />
+             <Ionicons name="close-circle" size={18} color={BrandColors.gray[300]} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Items Count */}
-      <View style={styles.countContainer}>
-        <Text style={styles.countText}>{filteredItems.length} items</Text>
-      </View>
-
-      {/* Items List */}
       <FlatList
         data={filteredItems}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons
-              name="cafe-outline"
-              size={64}
-              color={BrandColors.gray[300]}
-            />
+          <View style={styles.empty}>
+            <Ionicons name="fast-food-outline" size={64} color={BrandColors.gray[200]} />
             <Text style={styles.emptyText}>No items found</Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={openAddModal}>
-              <Text style={styles.emptyButtonText}>Add Your First Item</Text>
-            </TouchableOpacity>
           </View>
         }
       />
 
-      {/* Add/Edit Modal */}
-      <Modal
-        visible={showModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowModal(false)}
-      >
+      <Modal visible={showModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingItem ? "Edit Item" : "Add New Item"}
-              </Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={BrandColors.gray[600]}
-                />
+              <View>
+                <Text style={styles.modalTitle}>{editingItem ? "Update Item" : "Create Item"}</Text>
+                <Text style={styles.modalSubtitle}>Fill in the delicious details</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowModal(false)} style={styles.closeModal}>
+                <Ionicons name="close" size={24} color={BrandColors.gray[900]} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              style={styles.modalBody}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Image Preview */}
-              <View style={styles.imagePreview}>
-                {formData.imgUrl ? (
-                  <Image
-                    source={{ uri: formData.imgUrl }}
-                    style={styles.previewImage}
-                  />
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <Ionicons
-                      name="image-outline"
-                      size={48}
-                      color={BrandColors.gray[400]}
-                    />
-                    <Text style={styles.imagePlaceholderText}>Item Image</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Image URL Input */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Image URL (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="https://example.com/image.jpg"
-                  placeholderTextColor={BrandColors.gray[400]}
-                  value={formData.imgUrl}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, imgUrl: text })
-                  }
+            <ScrollView contentContainerStyle={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.field}>
+                <Text style={styles.label}>Product Name</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={formData.name} 
+                  onChangeText={(t) => setFormData({...formData, name: t})}
+                  placeholder="e.g. Mocha Blast"
                 />
               </View>
 
-              {/* Name Input */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Item Name *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Cappuccino"
-                  placeholderTextColor={BrandColors.gray[400]}
-                  value={formData.name}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, name: text })
-                  }
-                />
-              </View>
-
-              {/* Price Input */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Price (₹) *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 180"
-                  placeholderTextColor={BrandColors.gray[400]}
+              <View style={[styles.field, { width: "50%" }]}>
+                <Text style={styles.label}>Price (₹)</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={formData.price} 
+                  onChangeText={(t) => setFormData({...formData, price: t})}
+                  placeholder="0.00"
                   keyboardType="numeric"
-                  value={formData.price}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, price: text })
-                  }
                 />
               </View>
 
-              {/* Category Selector */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Category *</Text>
-                {categoryItems.length > 0 ? (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.categoryOptions}>
-                      {categoryItems.map((cat) => (
-                        <TouchableOpacity
-                          key={cat.id}
-                          style={[
-                            styles.categoryOption,
-                            formData.categoryId === cat.id &&
-                              styles.categoryOptionActive,
-                          ]}
-                          onPress={() =>
-                            setFormData({ ...formData, categoryId: cat.id })
-                          }
-                        >
-                          <Text
-                            style={[
-                              styles.categoryOptionText,
-                              formData.categoryId === cat.id &&
-                                styles.categoryOptionTextActive,
-                            ]}
-                          >
-                            {cat.name}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </ScrollView>
-                ) : (
-                  <View style={styles.noCategoriesContainer}>
-                    <Ionicons
-                      name="alert-circle-outline"
-                      size={24}
-                      color={BrandColors.danger}
-                    />
-                    <Text style={styles.noCategoriesText}>
-                      No categories found. Please create categories first in the
-                      Categories section.
-                    </Text>
-                  </View>
-                )}
+              <View style={styles.field}>
+                <Text style={styles.label}>Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catRoll}>
+                   {categoryItems.map((cat) => (
+                     <TouchableOpacity 
+                       key={cat.id} 
+                       onPress={() => setFormData({...formData, categoryId: cat.id})}
+                       style={[styles.catPill, formData.categoryId === cat.id && styles.catPillActive]}
+                     >
+                       <Text style={[styles.catPillText, formData.categoryId === cat.id && styles.catPillTextActive]}>{cat.name}</Text>
+                     </TouchableOpacity>
+                   ))}
+                </ScrollView>
               </View>
 
-              {/* Description Input */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Description (optional)</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  placeholder="Brief description of the item"
-                  placeholderTextColor={BrandColors.gray[400]}
+              <View style={styles.field}>
+                <Text style={styles.label}>Description</Text>
+                <TextInput 
+                  style={[styles.input, { height: 80, textAlignVertical: "top" }]} 
+                  value={formData.description} 
+                  onChangeText={(t) => setFormData({...formData, description: t})}
+                  placeholder="Tell clients about this item..."
                   multiline
-                  numberOfLines={3}
-                  value={formData.description}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, description: text })
-                  }
                 />
               </View>
-            </ScrollView>
 
-            {/* Modal Actions */}
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleSaveItem}
-                disabled={isCreatingProduct || isUpdatingProduct}
-              >
+              <TouchableOpacity style={styles.submit} onPress={handleSaveItem}>
                 {isCreatingProduct || isUpdatingProduct ? (
-                  <ActivityIndicator color={BrandColors.white} size="small" />
+                  <ActivityIndicator color={BrandColors.white} />
                 ) : (
-                  <Text style={styles.saveButtonText}>
-                    {editingItem ? "Update" : "Add Item"}
-                  </Text>
+                  <Text style={styles.submitText}>{editingItem ? "Save Changes" : "Create Item"}</Text>
                 )}
               </TouchableOpacity>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -552,279 +308,225 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.gray[50],
   },
   header: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    backgroundColor: BrandColors.white,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    backgroundColor: BrandColors.white,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
+    borderBottomColor: BrandColors.gray[50],
   },
   headerTitle: {
-    fontSize: FontSizes.xxl,
-    fontWeight: "700",
+    fontSize: FontSizes.xl,
+    fontWeight: "800",
     color: BrandColors.gray[900],
+    letterSpacing: -0.5,
   },
-  addButton: {
+  headerSubtitle: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[500],
+    fontWeight: "500",
+  },
+  headerAdd: {
     width: 44,
     height: 44,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: BrandColors.accent,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.primary,
     alignItems: "center",
     justifyContent: "center",
+    ...Shadows.sm,
   },
-  searchContainer: {
+  searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: BrandColors.white,
-    marginHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.xl,
     marginTop: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.lg,
     height: 48,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
   },
   searchInput: {
     flex: 1,
     marginLeft: Spacing.sm,
-    fontSize: FontSizes.md,
+    fontSize: 14,
+    fontWeight: "600",
     color: BrandColors.gray[900],
   },
-  countContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+  list: {
+    padding: Spacing.xl,
+    paddingTop: Spacing.md,
   },
-  countText: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[600],
-  },
-  listContent: {
-    padding: Spacing.lg,
-    paddingTop: 0,
-  },
-  itemCard: {
+  card: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: BrandColors.white,
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     marginBottom: Spacing.md,
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    ...Shadows.sm,
   },
-  itemImageContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+  cardImage: {
+    width: 56,
+    height: 56,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.primary + "08",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  itemImage: {
+  img: {
     width: "100%",
     height: "100%",
-    borderRadius: BorderRadius.md,
   },
-  itemInfo: {
+  cardInfo: {
     flex: 1,
     marginLeft: Spacing.md,
   },
-  itemName: {
-    fontSize: FontSizes.lg,
-    fontWeight: "600",
+  cardName: {
+    fontSize: FontSizes.md,
+    fontWeight: "700",
     color: BrandColors.gray[900],
   },
-  itemCategory: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[500],
+  cardType: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: BrandColors.gray[400],
+    textTransform: "uppercase",
     marginTop: 2,
+    letterSpacing: 0.5,
   },
-  itemPrice: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
+  cardPrice: {
+    fontSize: FontSizes.md,
+    fontWeight: "800",
     color: BrandColors.primary,
-    marginTop: Spacing.xs,
+    marginTop: 4,
   },
-  itemActions: {
+  cardActions: {
     flexDirection: "row",
-    gap: Spacing.sm,
+    gap: 8,
   },
-  editButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+  actBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: BrandColors.primary + "10",
     alignItems: "center",
     justifyContent: "center",
   },
-  deleteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.danger + "15",
+  empty: {
     alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyContainer: {
-    alignItems: "center",
-    paddingVertical: Spacing.xxl,
+    marginTop: 100,
   },
   emptyText: {
-    fontSize: FontSizes.lg,
-    color: BrandColors.gray[500],
-    marginTop: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  emptyButton: {
-    backgroundColor: BrandColors.accent,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.lg,
-  },
-  emptyButtonText: {
     fontSize: FontSizes.md,
-    fontWeight: "600",
-    color: BrandColors.white,
+    color: BrandColors.gray[200],
+    fontWeight: "700",
+    marginTop: Spacing.md,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: BrandColors.white,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    maxHeight: "90%",
+    borderTopLeftRadius: BorderRadius.xxl,
+    borderTopRightRadius: BorderRadius.xxl,
+    paddingBottom: Spacing.xxl,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
+    borderBottomColor: BrandColors.gray[50],
   },
   modalTitle: {
     fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
-  modalBody: {
-    padding: Spacing.lg,
+  modalSubtitle: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[500],
+    fontWeight: "500",
   },
-  imagePreview: {
-    alignItems: "center",
-    marginBottom: Spacing.lg,
-  },
-  previewImage: {
-    width: 120,
-    height: 120,
-    borderRadius: BorderRadius.lg,
-  },
-  imagePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: BrandColors.gray[100],
+  closeModal: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.gray[50],
     alignItems: "center",
     justifyContent: "center",
   },
-  imagePlaceholderText: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[500],
-    marginTop: Spacing.xs,
+  modalBody: {
+    padding: Spacing.xl,
   },
-  inputGroup: {
+  field: {
     marginBottom: Spacing.lg,
   },
-  inputLabel: {
-    fontSize: FontSizes.md,
-    fontWeight: "600",
-    color: BrandColors.gray[800],
-    marginBottom: Spacing.sm,
+  label: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: BrandColors.gray[400],
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: BrandColors.gray[100],
-    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.gray[50],
+    height: 52,
+    borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
     fontSize: FontSizes.md,
+    fontWeight: "600",
     color: BrandColors.gray[900],
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[100],
   },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  categoryOptions: {
+  catRoll: {
     flexDirection: "row",
-    gap: Spacing.sm,
   },
-  categoryOption: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+  catPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: BrandColors.gray[50],
     borderRadius: BorderRadius.full,
-    backgroundColor: BrandColors.gray[100],
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[200],
   },
-  categoryOptionActive: {
+  catPillActive: {
     backgroundColor: BrandColors.primary,
+    borderColor: BrandColors.primary,
   },
-  categoryOptionText: {
-    fontSize: FontSizes.md,
-    color: BrandColors.gray[700],
+  catPillText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: BrandColors.gray[600],
   },
-  categoryOptionTextActive: {
+  catPillTextActive: {
     color: BrandColors.white,
-    fontWeight: "600",
   },
-  noCategoriesContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: BrandColors.danger + "10",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    gap: Spacing.md,
-  },
-  noCategoriesText: {
-    flex: 1,
-    fontSize: FontSizes.sm,
-    color: BrandColors.danger,
-    fontWeight: "500",
-  },
-  modalActions: {
-    flexDirection: "row",
-    padding: Spacing.lg,
-    gap: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: BrandColors.gray[200],
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-    borderColor: BrandColors.gray[300],
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    fontSize: FontSizes.md,
-    fontWeight: "600",
-    color: BrandColors.gray[700],
-  },
-  saveButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.lg,
+  submit: {
     backgroundColor: BrandColors.primary,
+    height: 56,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
+    justifyContent: "center",
+    marginTop: Spacing.xl,
+    ...Shadows.md,
   },
-  saveButtonText: {
-    fontSize: FontSizes.md,
-    fontWeight: "600",
+  submitText: {
     color: BrandColors.white,
+    fontSize: FontSizes.lg,
+    fontWeight: "800",
   },
 });

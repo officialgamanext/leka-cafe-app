@@ -3,6 +3,7 @@ import {
   BorderRadius,
   BrandColors,
   FontSizes,
+  Shadows,
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -30,7 +31,6 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Country options with flags
 const COUNTRIES = [
   { label: "🇮🇳  India", value: "India" },
   { label: "🇦🇪  UAE", value: "UAE" },
@@ -42,22 +42,17 @@ export default function BusinessListScreen() {
   const {
     user,
     selectBusiness,
-    getToken,
     isAuthenticated,
-    token,
     getCurrentBusinessRole,
     setToken,
     setRefreshToken,
-
   } = useAuth();
   const {
     data: businessList,
     isLoading,
-    error,
   } = useApiTenants({ enabled: isAuthenticated });
   const { mutate, isPending: isCreatePending } = useCreateApiTenant();
 
-  // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [cafeName, setCafeName] = useState("");
   const [addressLane1, setAddressLane1] = useState("");
@@ -70,29 +65,15 @@ export default function BusinessListScreen() {
 
   const handleSelectBusiness = (business: Business) => {
     selectBusiness(business);
-
     if (business.subscription?.status === false) {
       router.push("/subscriptions");
       return;
     }
-
     if (getCurrentBusinessRole() === Roles.OWNER) {
       router.replace("/(tabs)");
     } else {
       router.replace("/(tabs)/billing");
     }
-  };
-
-  const handleOpenModal = () => {
-    setCafeName("");
-    setAddressLane1("");
-    setAddressLane2("");
-    setCity("");
-    setState("");
-    setZipCode("");
-    setCountry("");
-    setCountryDropdownOpen(false);
-    setModalVisible(true);
   };
 
   const handleSaveDetails = async () => {
@@ -110,8 +91,6 @@ export default function BusinessListScreen() {
     mutate(newBusiness, {
       onSuccess: (data) => {
         setModalVisible(false);
-        Alert.alert("Business Created Successfully !");
-        // update new token and refresh token in auth context
         const apiResponse = data.data;
         if (apiResponse.accessToken && apiResponse.refreshToken) {
             setToken(apiResponse.accessToken);
@@ -119,34 +98,17 @@ export default function BusinessListScreen() {
         }
       },
       onError: () => {
-        Alert.alert(
-          "Failed Creating Business",
-          "Failed to Create the Business, Please try again",
-        );
-        setModalVisible(false);
+        Alert.alert("Error", "Failed to create business. Please try again.");
       },
     });
   };
 
   const getSubscriptionStatusInfo = (business: Business) => {
     const status: unknown = business.subscription?.status;
-    const isSubscriptionActive =
-      typeof status === "boolean"
-        ? status
-        : typeof status === "string"
-          ? status.toLowerCase() === "true"
-          : status instanceof Boolean
-            ? status.valueOf()
-            : false;
+    const isSubscriptionActive = !!status;
 
     if (!isSubscriptionActive) {
-      return {
-        label: "Inactive",
-        color: BrandColors.danger,
-        bgColor: BrandColors.danger + "15",
-        textColor: BrandColors.danger,
-        icon: "close-circle",
-      };
+      return { label: "Inactive", color: BrandColors.danger, icon: "close-circle" };
     }
 
     const endDateValue = business.subscription?.endDate;
@@ -155,539 +117,393 @@ export default function BusinessListScreen() {
       if (!Number.isNaN(endDate.getTime())) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         if (endDate < today) {
-          return {
-            label: "Expired",
-            color: BrandColors.danger,
-            bgColor: BrandColors.danger + "15",
-            textColor: BrandColors.danger,
-            icon: "alert-circle",
-          };
+          return { label: "Expired", color: BrandColors.danger, icon: "alert-circle" };
         }
-
         const oneMonthFromNow = new Date();
         oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-
         if (endDate < oneMonthFromNow) {
-          return {
-            label: "Expires Soon",
-            color: BrandColors.warning,
-            bgColor: BrandColors.warning + "15",
-            textColor: BrandColors.warning,
-            icon: "time",
-          };
+          return { label: "Expiring", color: BrandColors.warning, icon: "time" };
         }
       }
     }
-
-    return {
-      label: "Active",
-      color: BrandColors.success,
-      bgColor: BrandColors.success + "15",
-      textColor: BrandColors.success,
-      icon: "checkmark-circle",
-    };
+    return { label: "Active", color: BrandColors.success, icon: "checkmark-circle" };
   };
 
   const renderBusinessItem = ({ item }: { item: Business }) => {
-    const subscriptionStatusInfo = getSubscriptionStatusInfo(item);
+    const status = getSubscriptionStatusInfo(item);
 
     return (
       <TouchableOpacity
         style={styles.businessCard}
         onPress={() => handleSelectBusiness(item)}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
       >
         <View style={styles.businessIcon}>
           <Image
             source={require("@/assets/images/logo.png")}
-            style={{ width: 40, height: 40 }}
+            style={{ width: 44, height: 44 }}
             resizeMode="contain"
           />
         </View>
         <View style={styles.businessInfo}>
           <View style={styles.businessNameRow}>
-            <Text style={styles.businessName}>{item.name}</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: subscriptionStatusInfo.bgColor },
-              ]}
-            >
-              <Ionicons
-                name={subscriptionStatusInfo.icon as any}
-                size={12}
-                color={subscriptionStatusInfo.textColor}
-              />
-              <Text
-                style={[
-                  styles.statusBadgeText,
-                  { color: subscriptionStatusInfo.textColor },
-                ]}
-              >
-                {subscriptionStatusInfo.label}
-              </Text>
+            <Text style={styles.businessName} numberOfLines={1}>{item.name}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: status.color + "10" }]}>
+              <Text style={[styles.statusBadgeText, { color: status.color }]}>{status.label}</Text>
             </View>
           </View>
-          <Text style={styles.businessAddress}>
-            {item.address?.line1}, {item.address?.line2}, {item.address?.city},{" "}
-            {item.address?.state} - {item.address?.postalCode},{" "}
-            {item.address?.country}{" "}
+          <Text style={styles.businessAddress} numberOfLines={2}>
+            {item.address?.city}, {item.address?.state}
           </Text>
-          {item.contact?.phone && (
-            <View style={styles.businessMeta}>
-              <Ionicons
-                name="call-outline"
-                size={14}
-                color={BrandColors.gray[500]}
-              />
-              <Text style={styles.businessPhone}>{item.contact?.phone}</Text>
-            </View>
-          )}
+          <View style={styles.businessFooter}>
+             <Ionicons name="location" size={12} color={BrandColors.gray[400]} />
+             <Text style={styles.businessZip}>{item.address?.postalCode}</Text>
+          </View>
         </View>
-        <Ionicons
-          name="chevron-forward"
-          size={24}
-          color={BrandColors.gray[400]}
-        />
+        <Ionicons name="chevron-forward" size={20} color={BrandColors.gray[300]} />
       </TouchableOpacity>
     );
   };
 
-  const selectedCountryLabel = COUNTRIES.find(
-    (c) => c.value === country,
-  )?.label;
+  const selectedCountryLabel = COUNTRIES.find(c => c.value === country)?.label;
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
-        <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor={BrandColors.white}
-        />
-
-        {/* Header */}
-        <View style={styles.header}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
+      
+      {/* Header Banner */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
           <View>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{user?.name || "User"} 👋</Text>
+            <Text style={styles.greeting}>Good day,</Text>
+            <Text style={styles.userName}>{user?.name || "Partner"}</Text>
           </View>
-          <View style={styles.avatarContainer}>
-            <Ionicons name="person" size={24} color={BrandColors.primary} />
-          </View>
+          <TouchableOpacity style={styles.profileButton}>
+            <Ionicons name="person" size={20} color={BrandColors.primary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.main}>
+        <View style={styles.titleSection}>
+          <Text style={styles.mainTitle}>Your Businesses</Text>
+          <Text style={styles.mainSubtitle}>Select a business to start managing</Text>
         </View>
 
-        {/* Title */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Select Business</Text>
-          <Text style={styles.subtitle}>Choose a cafe to manage</Text>
-        </View>
-
-        {/* Business List */}
-        {isLoading && <SkeletonBusinessList />}
-        {!isLoading && (
+        {isLoading ? (
+          <SkeletonBusinessList />
+        ) : (
           <FlatList
             data={businessList?.data}
             keyExtractor={(item) => item.id}
             renderItem={renderBusinessItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="cafe-outline" size={64} color={BrandColors.gray[200]} />
+                <Text style={styles.emptyText}>No businesses found</Text>
+              </View>
+            }
           />
         )}
-
-        {/* Add Business Button */}
-        <View style={styles.bottomContainer}>
-          <TouchableOpacity
-            style={styles.addButton}
-            activeOpacity={0.8}
-            onPress={handleOpenModal}
-          >
-            <Ionicons
-              name="add-circle-outline"
-              size={24}
-              color={BrandColors.accent}
-            />
-            <Text style={styles.addButtonText}>Add New Business</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ─── Add New Business Modal ─── */}
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          transparent={false}
-          presentationStyle="fullScreen"
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <TouchableWithoutFeedback
-            onPress={Keyboard.dismiss}
-            accessible={false}
-          >
-            <SafeAreaView style={styles.modalOverlay}>
-              <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.modalKeyboard}
-              >
-                <View style={styles.modalContainer}>
-                  {/* Modal Header */}
-                  <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Add New Business</Text>
-                    <TouchableOpacity
-                      onPress={() => setModalVisible(false)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons
-                        name="close"
-                        size={24}
-                        color={BrandColors.gray[700]}
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={styles.modalScroll}
-                  >
-                    {/* Cafe Name */}
-                    <Text style={styles.inputLabel}>Cafe Name</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Enter cafe name"
-                      placeholderTextColor={BrandColors.gray[400]}
-                      value={cafeName}
-                      onChangeText={setCafeName}
-                      returnKeyType="next"
-                    />
-
-                    {/* Address Section */}
-                    <View style={styles.sectionDivider}>
-                      <Ionicons
-                        name="location-outline"
-                        size={18}
-                        color={BrandColors.primary}
-                      />
-                      <Text style={styles.sectionTitle}>Address</Text>
-                    </View>
-
-                    <Text style={styles.inputLabel}>Address Lane 1</Text>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Street address"
-                      placeholderTextColor={BrandColors.gray[400]}
-                      value={addressLane1}
-                      onChangeText={setAddressLane1}
-                      returnKeyType="next"
-                    />
-
-                    <View style={styles.optionalRow}>
-                      <Text style={styles.inputLabel}>Address Lane 2</Text>
-                      <Text style={styles.optionalTag}>Optional</Text>
-                    </View>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Apt, suite, floor, etc."
-                      placeholderTextColor={BrandColors.gray[400]}
-                      value={addressLane2}
-                      onChangeText={setAddressLane2}
-                      returnKeyType="next"
-                    />
-
-                    {/* City & State – side by side */}
-                    <View style={styles.row}>
-                      <View style={styles.halfField}>
-                        <Text style={styles.inputLabel}>City</Text>
-                        <TextInput
-                          style={styles.textInput}
-                          placeholder="City"
-                          placeholderTextColor={BrandColors.gray[400]}
-                          value={city}
-                          onChangeText={setCity}
-                          returnKeyType="next"
-                        />
-                      </View>
-                      <View style={styles.halfField}>
-                        <Text style={styles.inputLabel}>State</Text>
-                        <TextInput
-                          style={styles.textInput}
-                          placeholder="State"
-                          placeholderTextColor={BrandColors.gray[400]}
-                          value={state}
-                          onChangeText={setState}
-                          returnKeyType="next"
-                        />
-                      </View>
-                    </View>
-
-                    {/* Zip & Country – side by side */}
-                    <View style={styles.row}>
-                      <View style={styles.halfField}>
-                        <Text style={styles.inputLabel}>Zip Code</Text>
-                        <TextInput
-                          style={styles.textInput}
-                          placeholder="Zip Code"
-                          placeholderTextColor={BrandColors.gray[400]}
-                          value={zipCode}
-                          onChangeText={setZipCode}
-                          keyboardType="number-pad"
-                          returnKeyType="done"
-                        />
-                      </View>
-                      <View style={styles.halfField}>
-                        <Text style={styles.inputLabel}>Country</Text>
-                        <TouchableOpacity
-                          style={styles.dropdownButton}
-                          onPress={() =>
-                            setCountryDropdownOpen(!countryDropdownOpen)
-                          }
-                          activeOpacity={0.7}
-                        >
-                          <Text
-                            style={[
-                              styles.dropdownButtonText,
-                              !country && { color: BrandColors.gray[400] },
-                            ]}
-                          >
-                            {selectedCountryLabel || "Select"}
-                          </Text>
-                          <Ionicons
-                            name={
-                              countryDropdownOpen
-                                ? "chevron-up"
-                                : "chevron-down"
-                            }
-                            size={18}
-                            color={BrandColors.gray[500]}
-                          />
-                        </TouchableOpacity>
-
-                        {countryDropdownOpen && (
-                          <View style={styles.dropdownList}>
-                            {COUNTRIES.map((c) => (
-                              <TouchableOpacity
-                                key={c.value}
-                                style={[
-                                  styles.dropdownItem,
-                                  country === c.value &&
-                                    styles.dropdownItemActive,
-                                ]}
-                                onPress={() => {
-                                  setCountry(c.value);
-                                  setCountryDropdownOpen(false);
-                                }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.dropdownItemText,
-                                    country === c.value &&
-                                      styles.dropdownItemTextActive,
-                                  ]}
-                                >
-                                  {c.label}
-                                </Text>
-                                {country === c.value && (
-                                  <Ionicons
-                                    name="checkmark"
-                                    size={18}
-                                    color={BrandColors.primary}
-                                  />
-                                )}
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-                    </View>
-
-                    {/* Save Button */}
-                    <TouchableOpacity
-                      style={[
-                        styles.saveButton,
-                        (!cafeName ||
-                          !addressLane1 ||
-                          !city ||
-                          !state ||
-                          !zipCode ||
-                          !country) &&
-                          styles.saveButtonDisabled,
-                      ]}
-                      onPress={handleSaveDetails}
-                      disabled={
-                        !cafeName ||
-                        !addressLane1 ||
-                        !city ||
-                        !state ||
-                        !zipCode ||
-                        !country
-                      }
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color={BrandColors.white}
-                      />
-                      <Text style={styles.saveButtonText}>Save Details</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                </View>
-              </KeyboardAvoidingView>
-            </SafeAreaView>
-          </TouchableWithoutFeedback>
-        </Modal>
       </View>
-    </TouchableWithoutFeedback>
+
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
+        <TouchableOpacity 
+          style={styles.addNewButton}
+          onPress={() => setModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add" size={24} color={BrandColors.white} />
+          <Text style={styles.addNewButtonText}>Add New Business</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Add Business Modal */}
+      <Modal visible={modalVisible} animationType="slide" transparent={false}>
+        <SafeAreaView style={styles.modalOverlay}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+            style={{ flex: 1 }}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={BrandColors.gray[900]} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>New Business</Text>
+              <View style={{ width: 44 }} />
+            </View>
+
+            <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <View style={styles.formSection}>
+                <Text style={styles.fieldLabel}>Business Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Leka Premium Cafe"
+                  value={cafeName}
+                  onChangeText={setCafeName}
+                />
+              </View>
+
+              <View style={styles.formSection}>
+                <Text style={styles.fieldLabel}>Street Address</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Line 1"
+                  value={addressLane1}
+                  onChangeText={setAddressLane1}
+                />
+                <TextInput
+                  style={[styles.input, { marginTop: Spacing.sm }]}
+                  placeholder="Line 2 (Optional)"
+                  value={addressLane2}
+                  onChangeText={setAddressLane2}
+                />
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>City</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="City"
+                    value={city}
+                    onChangeText={setCity}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>State</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="State"
+                    value={state}
+                    onChangeText={setState}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Postal Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="000 000"
+                    keyboardType="number-pad"
+                    value={zipCode}
+                    onChangeText={setZipCode}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Country</Text>
+                  <TouchableOpacity 
+                    style={styles.dropdown}
+                    onPress={() => setCountryDropdownOpen(!countryDropdownOpen)}
+                  >
+                    <Text style={[styles.dropdownText, !country && { color: BrandColors.gray[400] }]}>
+                      {selectedCountryLabel || "Select"}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color={BrandColors.gray[400]} />
+                  </TouchableOpacity>
+                  
+                  {countryDropdownOpen && (
+                    <View style={styles.dropdownMenu}>
+                      {COUNTRIES.map(c => (
+                        <TouchableOpacity 
+                          key={c.value} 
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setCountry(c.value);
+                            setCountryDropdownOpen(false);
+                          }}
+                        >
+                          <Text style={styles.dropdownItemText}>{c.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.saveButton, isCreatePending && { opacity: 0.7 }]}
+                onPress={handleSaveDetails}
+                disabled={isCreatePending}
+              >
+                {isCreatePending ? (
+                  <ActivityIndicator color={BrandColors.white} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Create Business</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BrandColors.gray[50],
+    backgroundColor: BrandColors.white,
   },
   header: {
+    backgroundColor: BrandColors.white,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[50],
+  },
+  headerContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
-    backgroundColor: BrandColors.white,
   },
   greeting: {
-    fontSize: FontSizes.md,
-    color: BrandColors.gray[600],
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
+    fontWeight: "500",
   },
   userName: {
     fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
-  avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: BrandColors.gray[100],
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.gray[50],
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
   },
-  titleContainer: {
+  main: {
+    flex: 1,
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
-    backgroundColor: BrandColors.white,
   },
-  title: {
+  titleSection: {
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  mainTitle: {
     fontSize: FontSizes.xxl,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
-    marginBottom: Spacing.xs,
+    letterSpacing: -0.5,
   },
-  subtitle: {
+  mainSubtitle: {
     fontSize: FontSizes.md,
-    color: BrandColors.gray[600],
+    color: BrandColors.gray[500],
+    marginTop: 2,
   },
   listContent: {
-    padding: Spacing.lg,
+    paddingBottom: 100,
   },
   businessCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: BrandColors.white,
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     marginBottom: Spacing.md,
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    ...Shadows.sm,
   },
   businessIcon: {
-    width: 60,
-    height: 60,
+    width: 64,
+    height: 64,
     borderRadius: BorderRadius.lg,
-    backgroundColor: BrandColors.primary + "15",
+    backgroundColor: BrandColors.gray[50],
     alignItems: "center",
     justifyContent: "center",
-    marginRight: Spacing.md,
   },
   businessInfo: {
     flex: 1,
+    marginLeft: Spacing.md,
   },
   businessNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
-    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
   businessName: {
-    fontSize: FontSizes.lg,
-    fontWeight: "600",
+    fontSize: FontSizes.md,
+    fontWeight: "700",
     color: BrandColors.gray[900],
     flex: 1,
   },
   statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: BorderRadius.full,
-    gap: 4,
+    marginLeft: 8,
   },
   statusBadgeText: {
-    fontSize: FontSizes.xs,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "800",
+    textTransform: "uppercase",
   },
   businessAddress: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[600],
-    marginBottom: Spacing.xs,
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[500],
+    lineHeight: 16,
   },
-  businessMeta: {
+  businessFooter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.xs,
+    marginTop: 4,
+    gap: 4,
   },
-  businessPhone: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[500],
+  businessZip: {
+    fontSize: 10,
+    color: BrandColors.gray[400],
+    fontWeight: "600",
   },
-  bottomContainer: {
-    padding: Spacing.lg,
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: Spacing.xl,
     backgroundColor: BrandColors.white,
     borderTopWidth: 1,
-    borderTopColor: BrandColors.gray[200],
+    borderTopColor: BrandColors.gray[50],
   },
-  addButton: {
+  addNewButton: {
+    backgroundColor: BrandColors.primary,
+    height: 56,
+    borderRadius: BorderRadius.md,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-    borderColor: BrandColors.accent,
-    borderStyle: "dashed",
     gap: Spacing.sm,
+    ...Shadows.md,
   },
-  addButtonText: {
+  addNewButtonText: {
+    color: BrandColors.white,
     fontSize: FontSizes.lg,
+    fontWeight: "700",
+  },
+  emptyState: {
+    alignItems: "center",
+    marginTop: 100,
+  },
+  emptyText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[300],
     fontWeight: "600",
-    color: BrandColors.accent,
+    marginTop: Spacing.md,
   },
-
-  /* ─── Modal Styles ─── */
+  /* Modal Styles */
   modalOverlay: {
-    flex: 1,
-    backgroundColor: BrandColors.white,
-  },
-  modalKeyboard: {
-    flex: 1,
-  },
-  modalContainer: {
     flex: 1,
     backgroundColor: BrandColors.white,
   },
@@ -696,143 +512,104 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
+    borderBottomColor: BrandColors.gray[50],
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.gray[50],
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalTitle: {
-    fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontSize: FontSizes.lg,
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
   modalScroll: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.lg,
+    padding: Spacing.xl,
   },
-
-  /* ─── Form Styles ─── */
-  inputLabel: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-    color: BrandColors.gray[700],
+  formSection: {
+    marginBottom: Spacing.lg,
+  },
+  fieldLabel: {
+    fontSize: FontSizes.xs,
+    fontWeight: "800",
+    color: BrandColors.gray[400],
+    textTransform: "uppercase",
+    letterSpacing: 1,
     marginBottom: Spacing.xs,
   },
-  textInput: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: BrandColors.gray[300],
+  input: {
+    height: 52,
+    backgroundColor: BrandColors.gray[50],
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     fontSize: FontSizes.md,
     color: BrandColors.gray[900],
-    backgroundColor: BrandColors.gray[50],
-    marginBottom: Spacing.md,
-  },
-  sectionDivider: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: BrandColors.gray[200],
-  },
-  sectionTitle: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    color: BrandColors.gray[900],
-  },
-  optionalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.xs,
-  },
-  optionalTag: {
-    fontSize: FontSizes.xs,
-    color: BrandColors.gray[400],
-    fontStyle: "italic",
+    fontWeight: "600",
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[100],
   },
   row: {
     flexDirection: "row",
     gap: Spacing.md,
+    marginBottom: Spacing.lg,
   },
-  halfField: {
-    flex: 1,
-  },
-
-  /* ─── Country Dropdown ─── */
-  dropdownButton: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: BrandColors.gray[300],
+  dropdown: {
+    height: 52,
+    backgroundColor: BrandColors.gray[50],
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    backgroundColor: BrandColors.gray[50],
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[100],
   },
-  dropdownButtonText: {
+  dropdownText: {
     fontSize: FontSizes.md,
     color: BrandColors.gray[900],
+    fontWeight: "600",
   },
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: BrandColors.gray[200],
-    borderRadius: BorderRadius.md,
+  dropdownMenu: {
+    position: "absolute",
+    top: 56,
+    left: 0,
+    right: 0,
     backgroundColor: BrandColors.white,
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.md,
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 10,
+    borderRadius: BorderRadius.md,
+    ...Shadows.md,
+    zIndex: 100,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
+    overflow: "hidden",
   },
   dropdownItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.md,
+    padding: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[100],
-  },
-  dropdownItemActive: {
-    backgroundColor: BrandColors.primary + "10",
+    borderBottomColor: BrandColors.gray[50],
   },
   dropdownItemText: {
     fontSize: FontSizes.md,
-    color: BrandColors.gray[800],
-  },
-  dropdownItemTextActive: {
-    color: BrandColors.primary,
+    color: BrandColors.gray[700],
     fontWeight: "600",
   },
-
-  /* ─── Save Button ─── */
   saveButton: {
-    flexDirection: "row",
+    backgroundColor: BrandColors.primary,
+    height: 56,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.sm,
-    height: 52,
-    backgroundColor: BrandColors.primary,
-    borderRadius: BorderRadius.lg,
-    marginTop: Spacing.lg,
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
+    marginTop: Spacing.xl,
+    ...Shadows.md,
   },
   saveButtonText: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
     color: BrandColors.white,
+    fontSize: FontSizes.lg,
+    fontWeight: "800",
   },
 });

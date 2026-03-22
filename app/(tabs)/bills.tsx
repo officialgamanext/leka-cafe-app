@@ -1,22 +1,23 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Shadows,
+  Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import { InvoiceFilterType, useApiInvoices } from "@/hooks/use-api-invoices";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -47,14 +48,9 @@ const FILTER_TYPE_MAP: Record<string, InvoiceFilterType> = {
 const isValidDateFormat = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 
 const formatBillDate = (dateValue?: string) => {
-  if (!dateValue) {
-    return "-";
-  }
-
+  if (!dateValue) return "-";
   const parsedDate = new Date(dateValue);
-  if (Number.isNaN(parsedDate.getTime())) {
-    return dateValue;
-  }
+  if (Number.isNaN(parsedDate.getTime())) return dateValue;
 
   return parsedDate.toLocaleString("en-IN", {
     day: "2-digit",
@@ -106,24 +102,17 @@ export default function AllBillsScreen() {
 
   const applyCustomFilter = () => {
     let hasError = false;
-
     if (!isValidDateFormat(fromDate)) {
-      setFromDateError("Invalid date format. Use YYYY-MM-DD");
+      setFromDateError("Use YYYY-MM-DD");
       hasError = true;
-    } else {
-      setFromDateError("");
-    }
+    } else setFromDateError("");
 
     if (!isValidDateFormat(toDate)) {
-      setToDateError("Invalid date format. Use YYYY-MM-DD");
+      setToDateError("Use YYYY-MM-DD");
       hasError = true;
-    } else {
-      setToDateError("");
-    }
+    } else setToDateError("");
 
-    if (hasError) {
-      return;
-    }
+    if (hasError) return;
 
     setAppliedFromDate(fromDate);
     setAppliedToDate(toDate);
@@ -134,68 +123,66 @@ export default function AllBillsScreen() {
   return (
     <View style={styles.container}>
       <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
+      
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>All Bills</Text>
+        <View>
+          <Text style={styles.headerTitle}>Order History</Text>
+          <Text style={styles.headerSubtitle}>Manage your transactions</Text>
+        </View>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={styles.filterTrigger}
           onPress={() => {
             setSelectedFilter(appliedFilter);
             setShowFilterModal(true);
           }}
+          activeOpacity={0.8}
         >
-          <Ionicons name="filter" size={20} color={BrandColors.primary} />
-          <Text style={styles.filterText}>{appliedFilter}</Text>
+          <Ionicons name="calendar-outline" size={18} color={BrandColors.primary} />
+          <Text style={styles.filterTriggerText}>{appliedFilter}</Text>
+          <Ionicons name="chevron-down" size={14} color={BrandColors.primary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.listContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {isLoading ? (
-          <View style={styles.stateContainer}>
+          <View style={styles.centerSection}>
             <ActivityIndicator size="large" color={BrandColors.primary} />
-            <Text style={styles.stateText}>Loading bills...</Text>
+            <Text style={styles.centerText}>Fetching orders...</Text>
           </View>
         ) : isError ? (
-          <View style={styles.stateContainer}>
-            <Text style={styles.stateText}>Failed to load bills</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={() => refetch()}
-            >
-              <Text style={styles.retryButtonText}>Retry</Text>
+          <View style={styles.centerSection}>
+            <Ionicons name="alert-circle-outline" size={64} color={BrandColors.danger} />
+            <Text style={styles.centerText}>Connection failed</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+              <Text style={styles.retryBtnText}>Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : bills.length === 0 ? (
-          <View style={styles.stateContainer}>
-            <Text style={styles.stateText}>No bills found</Text>
+          <View style={styles.centerSection}>
+            <Ionicons name="receipt-outline" size={64} color={BrandColors.gray[200]} />
+            <Text style={styles.centerText}>No orders found for this period</Text>
           </View>
         ) : (
-          bills.map((bill, index) => (
-            <View key={bill.id || String(index)} style={styles.billCard}>
-              <View style={styles.billIcon}>
-                <Ionicons
-                  name="document-text"
-                  size={24}
-                  color={BrandColors.primary}
-                />
+          bills.map((bill, i) => (
+            <View key={bill.id || i} style={styles.card}>
+              <View style={styles.cardIcon}>
+                <Ionicons name="receipt" size={24} color={BrandColors.primary} />
               </View>
-              <View style={styles.billInfo}>
-                <Text style={styles.billTitle}>Bill #{bill.id || "-"}</Text>
-                <Text style={styles.billDate}>
-                  {formatBillDate(bill.createdAt)}
-                </Text>
-                <Text style={styles.billItems}>
-                  {bill.items?.length || 0} items
-                </Text>
-              </View>
-              <View style={styles.billAmountContainer}>
-                <Text style={styles.billAmount}>
-                  ₹{(bill.totalAmount || 0).toLocaleString("en-IN")}
-                </Text>
-                <Text style={styles.billStatus}>
-                  {bill.status
-                    ? `${bill.status.charAt(0).toUpperCase()}${bill.status.slice(1)}`
-                    : "-"}
-                </Text>
+              <View style={styles.cardBody}>
+                <View style={styles.cardHeader}>
+                   <Text style={styles.cardId} numberOfLines={1}>#{(bill.id || "000").slice(-6)}</Text>
+                   <View style={styles.cardBadge}>
+                      <Text style={styles.cardBadgeText}>{bill.status || "PAID"}</Text>
+                   </View>
+                </View>
+                <Text style={styles.cardDate}>{formatBillDate(bill.createdAt)}</Text>
+                <View style={styles.cardFooter}>
+                   <Text style={styles.cardQty}>{bill.items?.length || 0} items</Text>
+                   <Text style={styles.cardAmt}>₹{(bill.totalAmount || 0).toLocaleString("en-IN")}</Text>
+                </View>
               </View>
             </View>
           ))
@@ -206,78 +193,50 @@ export default function AllBillsScreen() {
         <View style={styles.modalBg}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Range</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={BrandColors.gray[600]}
-                />
+              <Text style={styles.modalTitle}>Time Period</Text>
+              <TouchableOpacity onPress={() => setShowFilterModal(false)} style={styles.closeBtn}>
+                <Ionicons name="close" size={24} color={BrandColors.gray[900]} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.filterList}>
-              {DATE_FILTERS.map((filter) => (
+            <ScrollView style={styles.filterOptionsScroll}>
+              {DATE_FILTERS.map((f) => (
                 <TouchableOpacity
-                  key={filter}
-                  style={styles.filterOption}
-                  onPress={() => handleFilterSelect(filter)}
+                  key={f}
+                  style={[styles.option, selectedFilter === f && styles.optionActive]}
+                  onPress={() => handleFilterSelect(f)}
                 >
-                  <Text
-                    style={[
-                      styles.filterOptionText,
-                      selectedFilter === filter && styles.filterOptionActive,
-                    ]}
-                  >
-                    {filter}
-                  </Text>
-                  {selectedFilter === filter && (
-                    <Ionicons
-                      name="checkmark"
-                      size={20}
-                      color={BrandColors.primary}
-                    />
+                  <Text style={[styles.optionText, selectedFilter === f && styles.optionTextActive]}>{f}</Text>
+                  {selectedFilter === f && (
+                    <Ionicons name="checkmark-circle" size={20} color={BrandColors.primary} />
                   )}
                 </TouchableOpacity>
               ))}
 
               {selectedFilter === "Custom" && (
-                <View style={styles.customDateContainer}>
-                  <Text style={styles.inputLabel}>From Date (YYYY-MM-DD)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={fromDate}
-                    onChangeText={(value) => {
-                      setFromDate(value);
-                      if (fromDateError) {
-                        setFromDateError("");
-                      }
-                    }}
-                    placeholder="2026-01-01"
-                  />
-                  {!!fromDateError && (
-                    <Text style={styles.inputErrorText}>{fromDateError}</Text>
-                  )}
-                  <Text style={styles.inputLabel}>To Date (YYYY-MM-DD)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={toDate}
-                    onChangeText={(value) => {
-                      setToDate(value);
-                      if (toDateError) {
-                        setToDateError("");
-                      }
-                    }}
-                    placeholder="2026-12-31"
-                  />
-                  {!!toDateError && (
-                    <Text style={styles.inputErrorText}>{toDateError}</Text>
-                  )}
-                  <TouchableOpacity
-                    style={styles.applyButton}
-                    onPress={applyCustomFilter}
-                  >
-                    <Text style={styles.applyButtonText}>Apply Filter</Text>
+                <View style={styles.customPicker}>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>From Date</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={fromDate}
+                      onChangeText={setFromDate}
+                      placeholder="YYYY-MM-DD"
+                    />
+                    {!!fromDateError && <Text style={styles.errorText}>{fromDateError}</Text>}
+                  </View>
+                  <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>To Date</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={toDate}
+                      onChangeText={setToDate}
+                      placeholder="YYYY-MM-DD"
+                    />
+                    {!!toDateError && <Text style={styles.errorText}>{toDateError}</Text>}
+                  </View>
+                  <TouchableOpacity style={styles.applyBtn} onPress={applyCustomFilter}>
+                    <Text style={styles.applyBtnText}>Apply Selection</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -295,198 +254,241 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.gray[50],
   },
   header: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    backgroundColor: BrandColors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[100],
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    backgroundColor: BrandColors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
   },
   headerTitle: {
     fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
+    letterSpacing: -0.5,
   },
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: BrandColors.primary + "15",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    gap: Spacing.xs,
-  },
-  filterText: {
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
-    color: BrandColors.primary,
-  },
-  listContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-    paddingTop: 0,
-    flexGrow: 1,
-  },
-  stateContainer: {
-    flex: 1,
-    minHeight: 250,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  stateText: {
-    fontSize: FontSizes.md,
-    color: BrandColors.gray[600],
+  headerSubtitle: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[500],
     fontWeight: "500",
   },
-  retryButton: {
+  filterTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: BrandColors.primary + "10",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: BrandColors.primary + "20",
+  },
+  filterTriggerText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: BrandColors.primary,
+  },
+  scrollContent: {
+    padding: Spacing.xl,
+    paddingTop: Spacing.md,
+    flexGrow: 1,
+  },
+  centerSection: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 100,
+  },
+  centerText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[400],
+    fontWeight: "600",
+    marginTop: Spacing.md,
+  },
+  retryBtn: {
+    marginTop: Spacing.xl,
     backgroundColor: BrandColors.primary,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: BorderRadius.md,
   },
-  retryButtonText: {
+  retryBtnText: {
     color: BrandColors.white,
-    fontSize: FontSizes.sm,
-    fontWeight: "600",
+    fontWeight: "700",
   },
-  billCard: {
+  card: {
     flexDirection: "row",
     backgroundColor: BrandColors.white,
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     marginBottom: Spacing.md,
-    alignItems: "center",
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderWidth: 1.5,
+    borderColor: BrandColors.gray[50],
+    ...Shadows.sm,
   },
-  billIcon: {
+  cardIcon: {
     width: 48,
     height: 48,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.primary + "08",
     alignItems: "center",
     justifyContent: "center",
     marginRight: Spacing.md,
   },
-  billInfo: {
+  cardBody: {
     flex: 1,
   },
-  billTitle: {
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  cardId: {
     fontSize: FontSizes.md,
-    fontWeight: "600",
+    fontWeight: "800",
     color: BrandColors.gray[900],
+    flex: 1,
   },
-  billDate: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[500],
-    marginTop: 2,
-  },
-  billItems: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[500],
-  },
-  billAmountContainer: {
-    alignItems: "flex-end",
-  },
-  billAmount: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    color: BrandColors.gray[900],
-  },
-  billStatus: {
-    fontSize: FontSizes.xs,
-    color: BrandColors.success,
-    fontWeight: "600",
-    marginTop: 4,
+  cardBadge: {
     backgroundColor: BrandColors.success + "15",
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: BorderRadius.full,
+  },
+  cardBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: BrandColors.success,
+    textTransform: "uppercase",
+  },
+  cardDate: {
+    fontSize: FontSizes.xs,
+    color: BrandColors.gray[400],
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[50],
+  },
+  cardQty: {
+    fontSize: 12,
+    color: BrandColors.gray[600],
+    fontWeight: "600",
+  },
+  cardAmt: {
+    fontSize: FontSizes.lg,
+    fontWeight: "800",
+    color: BrandColors.gray[900],
   },
   modalBg: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: BrandColors.white,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    maxHeight: "80%",
+    borderTopLeftRadius: BorderRadius.xxl,
+    borderTopRightRadius: BorderRadius.xxl,
+    paddingBottom: Spacing.xxl,
+    maxHeight: "85%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
+    borderBottomColor: BrandColors.gray[50],
   },
   modalTitle: {
     fontSize: FontSizes.lg,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
-  filterList: {
-    padding: Spacing.lg,
+  closeBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.gray[50],
+    alignItems: "center",
+    justifyContent: "center",
   },
-  filterOption: {
+  filterOptionsScroll: {
+    padding: Spacing.xl,
+  },
+  option: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[100],
+    borderBottomColor: BrandColors.gray[50],
   },
-  filterOptionText: {
+  optionActive: {
+    borderBottomColor: BrandColors.primary + "30",
+  },
+  optionText: {
     fontSize: FontSizes.md,
-    color: BrandColors.gray[700],
-  },
-  filterOptionActive: {
-    color: BrandColors.primary,
+    color: BrandColors.gray[600],
     fontWeight: "600",
   },
-  customDateContainer: {
-    marginTop: Spacing.md,
-    padding: Spacing.md,
+  optionTextActive: {
+    color: BrandColors.primary,
+    fontWeight: "800",
+  },
+  customPicker: {
+    marginTop: Spacing.xl,
+    padding: Spacing.lg,
     backgroundColor: BrandColors.gray[50],
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
   },
-  inputLabel: {
-    fontSize: FontSizes.sm,
-    color: BrandColors.gray[700],
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.sm,
+  field: {
+    marginBottom: Spacing.md,
   },
-  input: {
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: BrandColors.gray[400],
+    textTransform: "uppercase",
+    marginBottom: 6,
+    letterSpacing: 1,
+  },
+  fieldInput: {
     backgroundColor: BrandColors.white,
-    borderWidth: 1,
-    borderColor: BrandColors.gray[300],
+    height: 48,
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     fontSize: FontSizes.md,
+    fontWeight: "600",
+    borderColor: BrandColors.gray[200],
+    borderWidth: 1,
   },
-  inputErrorText: {
-    marginTop: 4,
-    fontSize: FontSizes.xs,
+  errorText: {
     color: BrandColors.danger,
+    fontSize: 10,
+    marginTop: 4,
+    fontWeight: "600",
   },
-  applyButton: {
+  applyBtn: {
     backgroundColor: BrandColors.primary,
-    padding: Spacing.md,
+    height: 52,
     borderRadius: BorderRadius.md,
     alignItems: "center",
-    marginTop: Spacing.md,
+    justifyContent: "center",
+    marginTop: Spacing.lg,
+    ...Shadows.md,
   },
-  applyButtonText: {
+  applyBtnText: {
     color: BrandColors.white,
-    fontWeight: "600",
+    fontWeight: "800",
     fontSize: FontSizes.md,
   },
 });

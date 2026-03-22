@@ -2,6 +2,7 @@ import {
   BorderRadius,
   BrandColors,
   FontSizes,
+  Shadows,
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +16,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -285,18 +287,17 @@ export default function BillingScreen() {
       />
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
 
-      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Create Bill</Text>
+        <View>
+          <Text style={styles.headerTitle}>Create Bill</Text>
+          <Text style={styles.headerSubtitle}>Select items for the order</Text>
+        </View>
         <TouchableOpacity
           style={styles.viewBillButton}
           onPress={() => setShowBillModal(true)}
+          activeOpacity={0.8}
         >
-          <Ionicons
-            name="receipt-outline"
-            size={22}
-            color={BrandColors.white}
-          />
+          <Ionicons name="cart" size={24} color={BrandColors.white} />
           {billItems.length > 0 && (
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>{billItems.length}</Text>
@@ -359,52 +360,48 @@ export default function BillingScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Bottom Bill Summary */}
+      {/* Floating Bill Summary */}
       {billItems.length > 0 && (
-        <View style={styles.billSummary}>
-          <View style={styles.billInfo}>
-            <Text style={styles.billItemCount}>{billItems.length} items</Text>
-            <Text style={styles.billTotal}>Rs.{total.toFixed(2)}</Text>
-          </View>
-          <View style={styles.billActions}>
-            <TouchableOpacity
-              style={styles.openSummaryButton}
-              onPress={() => setShowBillModal(true)}
-            >
-              <Ionicons
-                name="chevron-up"
-                size={24}
-                color={BrandColors.primary}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSaveBill}
-              disabled={isCreatingInvoice}
-              accessibilityLabel="Save Bill"
-            >
-              {isCreatingInvoice ? (
-                <ActivityIndicator color={BrandColors.white} size="small" />
-              ) : (
+        <View style={styles.billSummaryContainer}>
+          <TouchableOpacity
+            style={styles.billSummary}
+            onPress={() => setShowBillModal(true)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.billInfo}>
+              <Text style={styles.billItemCount}>
+                {billItems.length} items selected
+              </Text>
+              <Text style={styles.billTotal}>₹{total.toFixed(2)}</Text>
+            </View>
+            <View style={styles.billActions}>
+              <TouchableOpacity
+                style={styles.actionIconButton}
+                onPress={handleSaveBill}
+                disabled={isCreatingInvoice}
+              >
+                {isCreatingInvoice ? (
+                  <ActivityIndicator color={BrandColors.white} size="small" />
+                ) : (
+                  <Ionicons name="save" size={20} color={BrandColors.white} />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionIconButton, styles.printActionButton]}
+                onPress={handlePrintBill}
+              >
+                <Ionicons name="print" size={20} color={BrandColors.white} />
+              </TouchableOpacity>
+              <View style={styles.viewBillCta}>
+                <Text style={styles.viewBillText}>Review</Text>
                 <Ionicons
-                  name="save-outline"
-                  size={20}
+                  name="chevron-forward"
+                  size={16}
                   color={BrandColors.white}
                 />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.printButton}
-              onPress={handlePrintBill}
-              accessibilityLabel="Print Bill"
-            >
-              <Ionicons
-                name="print-outline"
-                size={20}
-                color={BrandColors.white}
-              />
-            </TouchableOpacity>
-          </View>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -519,11 +516,6 @@ export default function BillingScreen() {
                     style={styles.printModalButton}
                     onPress={handlePrintBill}
                   >
-                    <Ionicons
-                      name="print-outline"
-                      size={18}
-                      color={BrandColors.gray[800]}
-                    />
                     <Text style={styles.printModalButtonText}>Print</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -561,58 +553,72 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.gray[50],
   },
   header: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    backgroundColor: BrandColors.white,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    backgroundColor: BrandColors.white,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
+    borderBottomColor: BrandColors.gray[100],
   },
   headerTitle: {
     fontSize: FontSizes.xxl,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
+    marginTop: 2,
   },
   viewBillButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.lg,
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
     backgroundColor: BrandColors.primary,
     alignItems: "center",
     justifyContent: "center",
+    ...Shadows.sm,
   },
   cartBadge: {
     position: "absolute",
-    top: -4,
-    right: -4,
-    width: 20,
+    top: -6,
+    right: -6,
+    minWidth: 20,
     height: 20,
     borderRadius: 10,
     backgroundColor: BrandColors.accent,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: BrandColors.white,
+    paddingHorizontal: 4,
   },
   cartBadgeText: {
-    fontSize: FontSizes.xs,
-    fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "800",
     color: BrandColors.white,
   },
   categoriesContainer: {
     backgroundColor: BrandColors.white,
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[50],
   },
   categoryButton: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    marginRight: Spacing.sm,
+    marginLeft: Spacing.lg,
     backgroundColor: BrandColors.gray[100],
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
   },
   categoryButtonActive: {
     backgroundColor: BrandColors.primary,
+    borderColor: BrandColors.primary,
   },
   categoryText: {
     fontSize: FontSizes.md,
@@ -623,8 +629,8 @@ const styles = StyleSheet.create({
     color: BrandColors.white,
   },
   menuGrid: {
-    padding: Spacing.md,
-    paddingBottom: 100,
+    padding: Spacing.lg,
+    paddingBottom: 150,
   },
   menuRow: {
     justifyContent: "space-between",
@@ -632,142 +638,144 @@ const styles = StyleSheet.create({
   menuItem: {
     width: "48%",
     backgroundColor: BrandColors.white,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.md,
-    marginBottom: Spacing.md,
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    ...Shadows.sm,
   },
   menuItemSelected: {
-    borderWidth: 2,
     borderColor: BrandColors.primary,
+    backgroundColor: BrandColors.primary + "05",
   },
   menuItemImage: {
     width: "100%",
-    height: 80,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+    height: 100,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: BrandColors.gray[50],
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[100],
   },
   menuItemInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    marginTop: Spacing.xs,
   },
   menuItemName: {
-    flex: 1,
     fontSize: FontSizes.md,
-    fontWeight: "600",
-    color: BrandColors.gray[900],
+    fontWeight: "700",
+    color: BrandColors.gray[800],
   },
   menuItemPrice: {
     fontSize: FontSizes.md,
-    fontWeight: "700",
+    fontWeight: "600",
     color: BrandColors.primary,
+    marginTop: 2,
   },
   quantityBadge: {
     position: "absolute",
-    top: Spacing.sm,
-    right: Spacing.sm,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    top: Spacing.xs,
+    right: Spacing.xs,
+    paddingHorizontal: 8,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: BrandColors.accent,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: BrandColors.white,
   },
   quantityText: {
-    fontSize: FontSizes.sm,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
     color: BrandColors.white,
   },
-  billSummary: {
+  billSummaryContainer: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: BrandColors.white,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    bottom: Spacing.lg,
+    left: Spacing.lg,
+    right: Spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 15,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  billSummary: {
+    backgroundColor: BrandColors.gray[900],
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: BrandColors.gray[200],
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
   },
   billInfo: {
     flex: 1,
+    paddingLeft: Spacing.xs,
   },
   billItemCount: {
-    fontSize: FontSizes.xs,
-    color: BrandColors.gray[600],
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    color: BrandColors.white,
+    opacity: 0.6,
+    fontWeight: "700",
   },
   billTotal: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
-    color: BrandColors.gray[900],
+    fontSize: FontSizes.xl,
+    fontWeight: "800",
+    color: BrandColors.white,
+    marginTop: 2,
   },
   billActions: {
     flexDirection: "row",
-    gap: Spacing.xs,
     alignItems: "center",
+    gap: Spacing.sm,
   },
-  openSummaryButton: {
-    width: 38,
-    height: 38,
+  actionIconButton: {
+    width: 44,
+    height: 44,
     borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.white,
+    backgroundColor: BrandColors.white + "15",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: BrandColors.primary,
   },
-  saveButton: {
-    backgroundColor: BrandColors.danger,
-    borderRadius: BorderRadius.md,
+  printActionButton: {
+    backgroundColor: BrandColors.white + "25",
+  },
+  viewBillCta: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    width: 38,
-    height: 38,
-  },
-  printButton: {
     backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
     borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    width: 38,
-    height: 38,
+    marginLeft: 4,
   },
-  printButtonText: {
-    fontSize: FontSizes.md,
+  viewBillText: {
     color: BrandColors.white,
-    fontWeight: "600",
-  },
-  buttonText: {
+    fontWeight: "700",
     fontSize: FontSizes.md,
-    fontWeight: "600",
-    color: BrandColors.white,
+    marginRight: 2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: BrandColors.white,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
-    maxHeight: "80%",
+    maxHeight: "85%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -775,77 +783,81 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[200],
+    borderBottomColor: BrandColors.gray[100],
   },
   modalTitle: {
     fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
   emptyBill: {
-    padding: Spacing.xxl,
+    padding: Spacing.xxxl,
     alignItems: "center",
   },
   emptyBillText: {
     fontSize: FontSizes.lg,
-    color: BrandColors.gray[500],
+    color: BrandColors.gray[400],
     marginTop: Spacing.md,
+    fontWeight: "600",
   },
   billItemsList: {
-    maxHeight: 300,
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
   },
   billItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: BrandColors.gray[100],
+    borderBottomColor: BrandColors.gray[50],
   },
   billItemInfo: {
     flex: 1,
   },
   billItemName: {
     fontSize: FontSizes.md,
-    fontWeight: "600",
-    color: BrandColors.gray[900],
+    fontWeight: "700",
+    color: BrandColors.gray[800],
   },
   billItemPrice: {
     fontSize: FontSizes.sm,
     color: BrandColors.gray[500],
-    marginTop: 2,
+    marginTop: 4,
   },
   quantityControls: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
+    backgroundColor: BrandColors.gray[50],
+    borderRadius: BorderRadius.md,
+    padding: 4,
     marginRight: Spacing.md,
   },
   quantityButton: {
     width: 32,
     height: 32,
-    borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.primary + "15",
+    borderRadius: BorderRadius.sm,
+    backgroundColor: BrandColors.white,
     alignItems: "center",
     justifyContent: "center",
+    ...Shadows.sm,
   },
   quantityValue: {
-    fontSize: FontSizes.lg,
-    fontWeight: "600",
-    color: BrandColors.gray[900],
-    minWidth: 24,
-    textAlign: "center",
-  },
-  billItemSubtotal: {
-    fontSize: FontSizes.lg,
+    fontSize: FontSizes.md,
     fontWeight: "700",
     color: BrandColors.gray[900],
-    minWidth: 70,
+    paddingHorizontal: Spacing.md,
+  },
+  billItemSubtotal: {
+    fontSize: FontSizes.md,
+    fontWeight: "800",
+    color: BrandColors.gray[900],
     textAlign: "right",
+    minWidth: 80,
   },
   billTotals: {
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     backgroundColor: BrandColors.gray[50],
+    borderTopWidth: 1,
+    borderTopColor: BrandColors.gray[100],
   },
   totalRow: {
     flexDirection: "row",
@@ -854,79 +866,74 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: FontSizes.md,
-    color: BrandColors.gray[600],
+    color: BrandColors.gray[500],
+    fontWeight: "600",
   },
   totalValue: {
     fontSize: FontSizes.md,
     color: BrandColors.gray[800],
+    fontWeight: "700",
   },
   grandTotalRow: {
-    paddingTop: Spacing.sm,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: BrandColors.gray[300],
-    marginBottom: 0,
+    borderTopColor: BrandColors.gray[200],
   },
   grandTotalLabel: {
-    fontSize: FontSizes.lg,
-    fontWeight: "700",
+    fontSize: FontSizes.xl,
+    fontWeight: "800",
     color: BrandColors.gray[900],
   },
   grandTotalValue: {
     fontSize: FontSizes.xl,
-    fontWeight: "700",
+    fontWeight: "800",
     color: BrandColors.primary,
   },
   modalActions: {
     flexDirection: "row",
-    padding: Spacing.md,
-    paddingBottom: Spacing.xl,
-    gap: Spacing.sm,
-    justifyContent: "space-between",
+    padding: Spacing.lg,
+    backgroundColor: BrandColors.white,
+    gap: Spacing.md,
   },
   clearButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
+    flex: 0.5,
+    height: 52,
     borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.danger + "20",
-    borderWidth: 1,
-    borderColor: BrandColors.danger,
+    backgroundColor: BrandColors.gray[100],
     alignItems: "center",
     justifyContent: "center",
   },
   clearButtonText: {
     fontSize: FontSizes.md,
     fontWeight: "600",
-    color: BrandColors.danger,
+    color: BrandColors.gray[600],
   },
   printModalButton: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
+    flex: 0.5,
+    height: 52,
     borderRadius: BorderRadius.md,
-    backgroundColor: BrandColors.gray[100],
-    borderWidth: 1,
-    borderColor: BrandColors.gray[300],
+    borderWidth: 1.5,
+    borderColor: BrandColors.primary,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 4,
   },
   printModalButtonText: {
     fontSize: FontSizes.md,
-    fontWeight: "600",
-    color: BrandColors.gray[800],
+    fontWeight: "700",
+    color: BrandColors.primary,
   },
   confirmButton: {
-    flex: 1.5,
-    paddingVertical: Spacing.sm,
+    flex: 1,
+    height: 52,
     borderRadius: BorderRadius.md,
     backgroundColor: BrandColors.primary,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
   },
   confirmButtonText: {
-    fontSize: FontSizes.md,
-    fontWeight: "700",
+    fontSize: FontSizes.lg,
+    fontWeight: "800",
     color: BrandColors.white,
   },
 });
