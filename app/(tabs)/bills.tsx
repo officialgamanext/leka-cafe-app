@@ -18,7 +18,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DATE_FILTERS = [
   "Today",
@@ -66,6 +66,7 @@ const formatBillDate = (dateValue?: string) => {
 };
 
 export default function AllBillsScreen() {
+  const insets = useSafeAreaInsets();
   const { currentBusiness, isAuthenticated } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState("Today");
   const [appliedFilter, setAppliedFilter] = useState("Today");
@@ -131,7 +132,8 @@ export default function AllBillsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>All Bills</Text>
         <TouchableOpacity
@@ -283,7 +285,7 @@ export default function AllBillsScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

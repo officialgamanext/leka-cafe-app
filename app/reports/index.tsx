@@ -16,7 +16,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DATE_FILTERS = [
   "Today",
@@ -40,6 +40,7 @@ const mockSoldItems = [
 ];
 
 export default function ReportsScreen() {
+  const insets = useSafeAreaInsets();
   const [selectedFilter, setSelectedFilter] = useState("Today");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [fromDate, setFromDate] = useState("");
@@ -63,7 +64,8 @@ export default function ReportsScreen() {
   const totalRevenue = mockSoldItems.reduce((acc, item) => acc + item.total, 0);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
@@ -189,7 +191,7 @@ export default function ReportsScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

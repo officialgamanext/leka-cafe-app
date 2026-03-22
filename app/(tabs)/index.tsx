@@ -18,9 +18,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function DashboardScreen() {
+  const insets = useSafeAreaInsets();
   const { currentBusiness, isAuthenticated } = useAuth();
   const { data: dashboardData, isLoading } = useApiDashboard({
     tenantId: currentBusiness?.id,
@@ -105,7 +106,7 @@ export default function DashboardScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { padding: Spacing.lg }]}>
+      <View style={[styles.container, { paddingTop: insets.top, paddingHorizontal: Spacing.lg }]}>
         <View style={styles.skeletonHeader} />
         <View style={styles.skeletonStatsContainer}>
           <View style={styles.skeletonCard} />
@@ -120,12 +121,13 @@ export default function DashboardScreen() {
             Loading Dashboard...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <View style={{ height: insets.top, backgroundColor: BrandColors.primary }} />
       <StatusBar
         barStyle="light-content"
         backgroundColor={BrandColors.primary}
@@ -366,7 +368,7 @@ export default function DashboardScreen() {
 
         <View style={{ height: Spacing.xxl * 2 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

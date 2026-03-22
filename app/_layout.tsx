@@ -13,8 +13,8 @@ import { BillingProvider } from "@/context/BillingContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { StyleSheet } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -68,7 +68,7 @@ export default function RootLayout() {
             value={colorScheme === "dark" ? CafeDarkTheme : CafeTheme}
           >
             <SafeAreaProvider>
-              <SafeAreaView style={styles.container}>
+              <View style={styles.container}>
                 <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="auth" options={{ headerShown: false }} />
                   <Stack.Screen
@@ -82,7 +82,7 @@ export default function RootLayout() {
                   <Stack.Screen name="error" options={{ headerShown: false }} />
                 </Stack>
                 <StatusBar style="auto" />
-              </SafeAreaView>
+              </View>
             </SafeAreaProvider>
             <Toast />
           </ThemeProvider>

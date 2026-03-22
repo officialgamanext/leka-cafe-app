@@ -28,12 +28,13 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
 // const categories = ["Coffee", "Snacks", "Food", "Beverages", "Desserts"];
 
 export default function ItemsScreen() {
+  const insets = useSafeAreaInsets();
   const {
     menuItems,
     addMenuItem,
@@ -305,7 +306,8 @@ export default function ItemsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
 
       {/* Header */}
@@ -540,7 +542,7 @@ export default function ItemsScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

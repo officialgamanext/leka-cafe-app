@@ -27,7 +27,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BLEPrinter,
   IBLEPrinter,
@@ -85,6 +85,7 @@ const MenuItem = ({
 );
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const {
     user,
     currentBusiness,
@@ -397,7 +398,11 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      edges={["left", "right", "bottom"]}
+    >
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
 
       {/* Header */}

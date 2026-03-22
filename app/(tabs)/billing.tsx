@@ -22,13 +22,14 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BLEPrinter } from "react-native-thermal-receipt-printer-image-qr";
 import Toast from "react-native-toast-message";
 
 // const categories = ["All", "Coffee", "Snacks", "Food"];
 
 export default function BillingScreen() {
+  const insets = useSafeAreaInsets();
   const {
     menuItems,
     billItems,
@@ -274,7 +275,8 @@ export default function BillingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <View style={{ height: insets.top, backgroundColor: BrandColors.white }} />
       <StatusBar barStyle="dark-content" backgroundColor={BrandColors.white} />
 
       {/* Header */}
@@ -543,7 +545,7 @@ export default function BillingScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
