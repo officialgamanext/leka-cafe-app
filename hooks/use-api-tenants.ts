@@ -169,6 +169,13 @@ const addUserToTenant = async ({ tenantId, payload }: AddTenantUserVariables) =>
         APIEndpoints.business.addUser.replace(':tenantId', tenantId),
         payload
     );
+
+    // Some API failures are returned as 200 with success=false.
+    // Normalize them into errors so mutation onError handlers can show proper messages.
+    if (data?.success === false) {
+        throw new Error(data?.message || data?.error || 'Failed to add user to tenant');
+    }
+
     return data;
 };
 

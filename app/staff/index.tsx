@@ -31,6 +31,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+const getApiErrorMessage = (error: unknown, fallbackMessage: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallbackMessage;
+};
+
 export default function StaffScreen() {
   const insets = useSafeAreaInsets();
   const { currentBusiness } = useAuth();
@@ -110,8 +117,8 @@ export default function StaffScreen() {
         setShowModal(false);
         Alert.alert("Success", "Staff added successfully");
       },
-      onError: () => {
-        Alert.alert("Error", "Failed to add staff");
+      onError: (error) => {
+        Alert.alert("Error", getApiErrorMessage(error, "You have reached the maximum number of staff members allowed for your plan. Please contact support to upgrade your plan."));
       },
     });
   };
