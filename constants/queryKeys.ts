@@ -1,6 +1,7 @@
 export const QUERY_KEYS = {
   // Auth
   TENANTS: 'tenants',
+  TENANT_USERS: 'tenantUsers',
   
   // Products/Menu Items
   PRODUCTS: 'products',

@@ -6,11 +6,17 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
-import { Roles, Staff } from "@/types";
+import {
+  TenantUser,
+  useAddTenantUser,
+  useApiTenantUsers,
+  useDeleteTenantUser,
+} from "@/hooks/use-api-tenants";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
@@ -29,19 +35,51 @@ export default function StaffScreen() {
   const insets = useSafeAreaInsets();
   const { currentBusiness } = useAuth();
   const [showModal, setShowModal] = useState(false);
-  const [staffList, setStaffList] = useState<Staff[]>([
-    {
-      id: "1",
-      name: "Siva Krishna",
-      mobile: "9876543210",
-      role: Roles.STAFF,
-      tenantId: currentBusiness?.id || "1",
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<TenantUser | null>(null);
 
   const [newName, setNewName] = useState("");
   const [newMobile, setNewMobile] = useState("");
+  const { mutate: addTenantUser, isPending: isAddingTenantUser } = useAddTenantUser();
+  const { mutate: deleteTenantUser, isPending: isDeletingTenantUser } = useDeleteTenantUser();
+  const { data: tenantUsers, isLoading: isTenantUsersLoading } = useApiTenantUsers({
+    tenantId: currentBusiness?.id,
+    enabled: !!currentBusiness?.id,
+  });
+  const countryCode = "+91"; // Assuming India for now, can be made dynamic later
+
+  const handleOpenDeleteModal = (staff: TenantUser) => {
+    setSelectedStaff(staff);
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setSelectedStaff(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleConfirmDeleteStaff = () => {
+    if (!currentBusiness?.id || !selectedStaff?.userId) {
+      Alert.alert("Error", "Unable to delete staff member");
+      return;
+    }
+
+    deleteTenantUser(
+      {
+        tenantId: currentBusiness.id,
+        userId: selectedStaff.userId,
+      },
+      {
+        onSuccess: () => {
+          handleCloseDeleteModal();
+          Alert.alert("Success", "Staff removed successfully");
+        },
+        onError: () => {
+          Alert.alert("Error", "Failed to remove staff");
+        },
+      }
+    );
+  };
 
   const handleAddStaff = () => {
     if (!newName.trim() || !newMobile.trim()) {
@@ -53,34 +91,50 @@ export default function StaffScreen() {
       return;
     }
 
-    const newStaff: Staff = {
-      id: Date.now().toString(),
-      name: newName,
-      mobile: newMobile,
-      role: Roles.STAFF,
-      tenantId: currentBusiness?.id || "1",
-      createdAt: new Date().toISOString(),
-    };
+    if (!currentBusiness?.id) {
+      Alert.alert("Error", "No business selected");
+      return;
+    }
 
-    setStaffList((prev) => [...prev, newStaff]);
-    setNewName("");
-    setNewMobile("");
-    setShowModal(false);
-    Alert.alert("Success", "Staff added successfully");
+    addTenantUser({
+      tenantId: currentBusiness.id,
+      payload: {
+        fullName: newName,
+        phone: `${countryCode}${newMobile}`,
+        role: "staff",
+      },
+    }, {
+      onSuccess: () => {
+        setNewName("");
+        setNewMobile("");
+        setShowModal(false);
+        Alert.alert("Success", "Staff added successfully");
+      },
+      onError: () => {
+        Alert.alert("Error", "Failed to add staff");
+      },
+    });
   };
 
-  const renderStaffItem = ({ item }: { item: Staff }) => (
+  const renderStaffItem = ({ item }: { item: TenantUser }) => (
     <View style={styles.staffCard}>
       <View style={styles.staffIcon}>
         <Ionicons name="person" size={24} color={BrandColors.primary} />
       </View>
       <View style={styles.staffInfo}>
-        <Text style={styles.staffName}>{item.name}</Text>
-        <Text style={styles.staffMobile}>{item.mobile}</Text>
+        <Text style={styles.staffName}>{item.fullName}</Text>
+        <Text style={styles.staffMobile}>{item.phone}</Text>
       </View>
       <View style={styles.staffBadge}>
-        <Text style={styles.staffBadgeText}>Staff</Text>
+        <Text style={styles.staffBadgeText}>{item.role}</Text>
       </View>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleOpenDeleteModal(item)}
+        disabled={isDeletingTenantUser}
+      >
+        <Ionicons name="trash-outline" size={18} color={BrandColors.danger} />
+      </TouchableOpacity>
     </View>
   );
 
@@ -110,12 +164,14 @@ export default function StaffScreen() {
       </View>
 
       <FlatList
-        data={staffList}
+        data={tenantUsers?.users || []}
         renderItem={renderStaffItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.userId}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
+          isTenantUsersLoading ? 
+          <ActivityIndicator size="large" color={BrandColors.primary} /> : 
           <View style={styles.emptyContainer}>
             <Ionicons
               name="people-outline"
@@ -171,11 +227,48 @@ export default function StaffScreen() {
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={handleAddStaff}
+                disabled={isAddingTenantUser}
                 activeOpacity={0.8}
               >
-                <Text style={styles.saveButtonText}>Add to Team</Text>
+                <Text style={styles.saveButtonText}>{isAddingTenantUser ? "Adding..." : "Add to Team"}</Text>
               </TouchableOpacity>
             </KeyboardAvoidingView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseDeleteModal}
+      >
+        <View style={styles.confirmModalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text style={styles.confirmTitle}>Remove Team Member?</Text>
+            <Text style={styles.confirmMessage}>
+              {`This will remove ${selectedStaff?.fullName || "this team member"} from your tenant.`}
+            </Text>
+
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCloseDeleteModal}
+                disabled={isDeletingTenantUser}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteConfirmButton}
+                onPress={handleConfirmDeleteStaff}
+                disabled={isDeletingTenantUser}
+              >
+                <Text style={styles.deleteConfirmButtonText}>
+                  {isDeletingTenantUser ? "Removing..." : "Remove"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -276,6 +369,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BrandColors.gray[100],
   },
+  deleteButton: {
+    marginLeft: Spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BrandColors.danger + "10",
+  },
   staffBadgeText: {
     fontSize: 10,
     fontWeight: "800",
@@ -367,5 +469,62 @@ const styles = StyleSheet.create({
     color: BrandColors.white,
     fontWeight: "800",
     fontSize: FontSizes.lg,
+  },
+  confirmModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.xl,
+  },
+  confirmModalContent: {
+    width: "100%",
+    backgroundColor: BrandColors.white,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+  },
+  confirmTitle: {
+    fontSize: FontSizes.lg,
+    fontWeight: "800",
+    color: BrandColors.gray[900],
+  },
+  confirmMessage: {
+    marginTop: Spacing.sm,
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[600],
+    fontWeight: "500",
+  },
+  confirmActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: Spacing.xl,
+  },
+  cancelButton: {
+    height: 42,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: BrandColors.gray[200],
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Spacing.sm,
+  },
+  cancelButtonText: {
+    fontSize: FontSizes.sm,
+    fontWeight: "700",
+    color: BrandColors.gray[700],
+  },
+  deleteConfirmButton: {
+    height: 42,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    backgroundColor: BrandColors.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteConfirmButtonText: {
+    fontSize: FontSizes.sm,
+    fontWeight: "800",
+    color: BrandColors.white,
   },
 });
