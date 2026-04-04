@@ -34,6 +34,12 @@ export interface Business {
   };
   defaultTaxRate?: number;
   defaultTaxComputationMethod?: "inclusive" | "exclusive";
+  printSettings?: {
+    showAddress: boolean;
+    showThankyou: boolean;
+    showPhone: boolean;
+    showTax: boolean;
+  };
   subscription: {
     status: Boolean;
     endDate?: Date;

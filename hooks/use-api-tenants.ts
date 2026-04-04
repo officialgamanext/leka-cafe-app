@@ -126,6 +126,12 @@ interface UpdateBusinessPayload {
     leagalInfo?: {
         gstNumber?: string;
     };
+    printSettings?: {
+        showAddress: boolean;
+        showThankyou: boolean;
+        showPhone: boolean;
+        showTax: boolean;
+    };
 }
 
 const updateApiTenant = async ({ tenantId, payload }: { tenantId: string; payload: UpdateBusinessPayload }) => {

@@ -140,22 +140,34 @@ export default function BillingScreen() {
       // Build a simple and clean bill format
       let billText = "";
 
-      // Cafe Name and Address
+      const printSettings = currentBusiness?.printSettings;
+
+      // Cafe Name (always printed)
       billText += "<C>" + (currentBusiness?.name || "CAFE") + "</C>\n";
-      const address = currentBusiness?.address;
-      const fullAddress = address
-        ? `${address.line1 || ""} ${address.line2 || ""}\n${address.city || ""}, ${address.state || ""} ${address.postalCode || ""}`
-        : "";
-      if (fullAddress.trim()) {
-        fullAddress.split("\n").forEach((line) => {
-          if (line.trim()) {
-            billText += `<C>${line.trim()}</C>\n`;
-          }
-        });
+
+      // Address section
+      if (printSettings?.showAddress !== false) {
+        const address = currentBusiness?.address;
+        const fullAddress = address
+          ? `${address.line1 || ""} ${address.line2 || ""}\n${address.city || ""}, ${address.state || ""} ${address.postalCode || ""}`
+          : "";
+        if (fullAddress.trim()) {
+          fullAddress.split("\n").forEach((line) => {
+            if (line.trim()) {
+              billText += `<C>${line.trim()}</C>\n`;
+            }
+          });
+        }
+        if (currentBusiness?.leagalInfo?.gstNumber) {
+          billText += `<C>GST: ${currentBusiness.leagalInfo.gstNumber}</C>\n`;
+        }
       }
-      if (currentBusiness?.leagalInfo?.gstNumber) {
-        billText += `<C>GST: ${currentBusiness.leagalInfo.gstNumber}</C>\n`;
+
+      // Phone section
+      if (printSettings?.showPhone !== false && currentBusiness?.contact?.phone) {
+        billText += `<C>Ph: ${currentBusiness.contact.phone}</C>\n`;
       }
+
       billText += "\n" + "=".repeat(32) + "\n\n";
 
       // Items
@@ -174,19 +186,26 @@ export default function BillingScreen() {
       const subtotalLine =
         "Subtotal".padEnd(20) + `Rs.${subtotal.toFixed(2)}`.padStart(10);
       const taxLine =
-        `Tax (${currentBusiness?.defaultTaxRate || 0}%) ${currentBusiness?.defaultTaxComputationMethod || "exclusive"}`.padEnd(20) + `Rs.${tax.toFixed(2)}`.padStart(10);
+        `Tax (${currentBusiness?.defaultTaxRate || 0}%) ${currentBusiness?.defaultTaxComputationMethod || "exclusive"}`.padEnd(20) +
+        `Rs.${tax.toFixed(2)}`.padStart(10);
       const totalLineText =
         "Total".padEnd(20) + `Rs.${total.toFixed(2)}`.padStart(10);
 
       billText += subtotalLine + "\n";
-      billText += taxLine + "\n";
+      if (printSettings?.showTax !== false) {
+        billText += taxLine + "\n";
+      }
       billText += "=".repeat(32) + "\n";
       billText += totalLineText + "\n";
       billText += "=".repeat(32) + "\n\n";
 
-      // Thank You Message
-      billText += "<C>Thank You!</C>\n";
-      billText += "<C>Visit Again</C>\n\n\n";
+      // Thank You message
+      if (printSettings?.showThankyou !== false) {
+        billText += "<C>Thank You!</C>\n";
+        billText += "<C>Visit Again</C>\n\n\n";
+      } else {
+        billText += "\n\n";
+      }
 
       // Print the bill first
       await BLEPrinter.printText(billText);

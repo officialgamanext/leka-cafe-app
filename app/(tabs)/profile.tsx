@@ -98,6 +98,13 @@ export default function ProfileScreen() {
   } = useAuth();
   const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [showTaxModal, setShowTaxModal] = useState(false);
+  const [showPrintSettingsModal, setShowPrintSettingsModal] = useState(false);
+  const [tempPrintSettings, setTempPrintSettings] = useState({
+    showAddress: currentBusiness?.printSettings?.showAddress ?? true,
+    showThankyou: currentBusiness?.printSettings?.showThankyou ?? true,
+    showPhone: currentBusiness?.printSettings?.showPhone ?? true,
+    showTax: currentBusiness?.printSettings?.showTax ?? true,
+  });
   const [printers, setPrinters] = useState<IBLEPrinter[]>([]);
   const [taxPercentage, setTaxPercentage] = useState<string>(
     currentBusiness?.defaultTaxRate?.toString() || "0" || "0",
@@ -188,10 +195,21 @@ export default function ProfileScreen() {
     if (!showTaxModal) {
       setTempTaxComputationMethod(nextTaxMethod);
     }
+
+    if (!showPrintSettingsModal) {
+      setTempPrintSettings({
+        showAddress: currentBusiness?.printSettings?.showAddress ?? true,
+        showThankyou: currentBusiness?.printSettings?.showThankyou ?? true,
+        showPhone: currentBusiness?.printSettings?.showPhone ?? true,
+        showTax: currentBusiness?.printSettings?.showTax ?? true,
+      });
+    }
   }, [
     currentBusiness?.defaultTaxRate,
     currentBusiness?.defaultTaxComputationMethod,
+    currentBusiness?.printSettings,
     showTaxModal,
+    showPrintSettingsModal,
   ]);
 
   const discoverPrinters = async () => {
@@ -379,6 +397,41 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleSavePrintSettings = () => {
+    if (!currentBusiness?.id) {
+      Alert.alert("Business not selected", "Please select a business first.");
+      return;
+    }
+
+    const payload = {
+      name: currentBusiness.name,
+      address: currentBusiness.address,
+      logoUrl: currentBusiness.logo || "/logo.png",
+      defaultTaxRate: currentBusiness.defaultTaxRate,
+      leagalInfo: currentBusiness.leagalInfo,
+      defaultTaxComputationMethod: currentBusiness.defaultTaxComputationMethod,
+      printSettings: tempPrintSettings,
+    };
+
+    updateTenant(
+      { tenantId: currentBusiness.id, payload },
+      {
+        onSuccess: () => {
+          selectBusiness({
+            ...currentBusiness,
+            printSettings: tempPrintSettings,
+          });
+          setShowPrintSettingsModal(false);
+          Alert.alert("Success", "Print settings updated successfully");
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENANTS] });
+        },
+        onError: (error) => {
+          Alert.alert("Error", error.message || "Failed to update print settings");
+        },
+      },
+    );
+  };
+
   const handlePrinterSetup = async () => {
     try {
       // Request permissions before opening printer modal
@@ -540,6 +593,12 @@ export default function ProfileScreen() {
               label="Printer setup"
               subtitle="Configure receipt printer"
               onPress={handlePrinterSetup}
+            />
+            <MenuItem
+              icon="receipt-outline"
+              label="Print Settings"
+              subtitle="Customise receipt print options"
+              onPress={() => setShowPrintSettingsModal(true)}
             />
           </View>
         </View>
@@ -932,6 +991,88 @@ export default function ProfileScreen() {
                 onPress={() => setShowPrinterModal(false)}
               >
                 <Text style={styles.modalPrimaryButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Print Settings Modal */}
+      <Modal
+        visible={showPrintSettingsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPrintSettingsModal(false)}
+      >
+        <View style={styles.taxModalOverlay}>
+          <View style={styles.taxModalContent}>
+            <View style={styles.taxModalHeader}>
+              <Text style={styles.taxModalTitle}>Print Settings</Text>
+              <TouchableOpacity
+                onPress={() => setShowPrintSettingsModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color={BrandColors.gray[700]} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.taxModalBody}>
+              <Text style={styles.printSettingsHint}>
+                Choose what to show on printed receipts.
+              </Text>
+
+              {(
+                [
+                  { key: "showAddress", label: "Show Address" },
+                  { key: "showPhone", label: "Show Phone" },
+                  { key: "showTax", label: "Show Tax" },
+                  { key: "showThankyou", label: "Show Thank-you message" },
+                ] as const
+              ).map(({ key, label }) => (
+                <TouchableOpacity
+                  key={key}
+                  style={styles.printSettingsRow}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    setTempPrintSettings((prev) => ({
+                      ...prev,
+                      [key]: !prev[key],
+                    }))
+                  }
+                >
+                  <Text style={styles.printSettingsLabel}>{label}</Text>
+                  <View
+                    style={[
+                      styles.printSettingsToggle,
+                      tempPrintSettings[key] && styles.printSettingsToggleOn,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.printSettingsThumb,
+                        tempPrintSettings[key] && styles.printSettingsThumbOn,
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.taxModalActions}>
+              <TouchableOpacity
+                style={styles.taxModalCancelButton}
+                onPress={() => setShowPrintSettingsModal(false)}
+              >
+                <Text style={styles.taxModalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.taxModalSaveButton}
+                onPress={handleSavePrintSettings}
+                disabled={isUpdatingTenant}
+              >
+                <Text style={styles.taxModalSaveButtonText}>
+                  {isUpdatingTenant ? "Saving..." : "Apply"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1627,5 +1768,50 @@ const styles = StyleSheet.create({
   },
   taxSegmentButtonTextActive: {
     color: BrandColors.white,
+  },
+  /* ─── Print Settings Modal Styles ─── */
+  printSettingsHint: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
+    marginBottom: Spacing.lg,
+  },
+  printSettingsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[100],
+  },
+  printSettingsLabel: {
+    fontSize: FontSizes.md,
+    fontWeight: "500",
+    color: BrandColors.gray[800],
+  },
+  printSettingsToggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: BrandColors.gray[300],
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  printSettingsToggleOn: {
+    backgroundColor: BrandColors.primary,
+  },
+  printSettingsThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: BrandColors.white,
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+    alignSelf: "flex-start",
+  },
+  printSettingsThumbOn: {
+    alignSelf: "flex-end",
   },
 });
