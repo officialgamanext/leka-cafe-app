@@ -1,20 +1,28 @@
 import {
-    BorderRadius,
-    BrandColors,
-    FontSizes,
-    Spacing,
+  BorderRadius,
+  BrandColors,
+  FontSizes,
+  Shadows,
+  Spacing,
 } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import {
+  ReportFilterType,
+  useApiProductSalesReport,
+} from "@/hooks/use-api-reports";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -30,38 +38,86 @@ const DATE_FILTERS = [
   "Custom",
 ];
 
-const mockSoldItems = [
-  { id: "1", name: "Cappuccino", quantity: 45, total: 6750 },
-  { id: "2", name: "Latte", quantity: 38, total: 5700 },
-  { id: "3", name: "Espresso", quantity: 25, total: 2500 },
-  { id: "4", name: "Avocado Toast", quantity: 18, total: 3600 },
-  { id: "5", name: "Croissant", quantity: 15, total: 1350 },
-  { id: "6", name: "Iced Tea", quantity: 12, total: 1200 },
-];
+const FILTER_TYPE_MAP: Record<string, ReportFilterType> = {
+  Today: "today",
+  Yesterday: "yesterday",
+  "This week": "thisWeek",
+  "Last week": "lastWeek",
+  "This month": "thisMonth",
+  "Last Month": "lastMonth",
+  "This year": "thisYear",
+  "Last Year": "lastYear",
+  Custom: "custom",
+};
+
+const isValidDateFormat = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
 
 export default function ReportsScreen() {
   const insets = useSafeAreaInsets();
+  const { currentBusiness, isAuthenticated } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState("Today");
+  const [appliedFilter, setAppliedFilter] = useState("Today");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [appliedFromDate, setAppliedFromDate] = useState("");
+  const [appliedToDate, setAppliedToDate] = useState("");
+  const [fromDateError, setFromDateError] = useState("");
+  const [toDateError, setToDateError] = useState("");
+
+  const selectedFilterType = FILTER_TYPE_MAP[appliedFilter] || "today";
+  const {
+    data: report,
+    isLoading,
+    isError,
+    refetch,
+  } = useApiProductSalesReport({
+    tenantId: currentBusiness?.id,
+    filters: {
+      filterType: selectedFilterType,
+      startDate: selectedFilterType === "custom" ? appliedFromDate : undefined,
+      endDate: selectedFilterType === "custom" ? appliedToDate : undefined,
+    },
+    enabled: !!currentBusiness?.id && isAuthenticated,
+  });
 
   const handleFilterSelect = (filter: string) => {
     setSelectedFilter(filter);
     if (filter !== "Custom") {
+      setAppliedFilter(filter);
       setShowFilterModal(false);
+      setFromDateError("");
+      setToDateError("");
     }
   };
 
   const applyCustomFilter = () => {
+    let hasError = false;
+    if (!isValidDateFormat(fromDate)) {
+      setFromDateError("Use YYYY-MM-DD");
+      hasError = true;
+    } else {
+      setFromDateError("");
+    }
+
+    if (!isValidDateFormat(toDate)) {
+      setToDateError("Use YYYY-MM-DD");
+      hasError = true;
+    } else {
+      setToDateError("");
+    }
+
+    if (hasError) return;
+
+    setAppliedFromDate(fromDate);
+    setAppliedToDate(toDate);
+    setAppliedFilter("Custom");
     setShowFilterModal(false);
   };
 
-  const totalItemsSold = mockSoldItems.reduce(
-    (acc, item) => acc + item.quantity,
-    0,
-  );
-  const totalRevenue = mockSoldItems.reduce((acc, item) => acc + item.total, 0);
+  const productSales = report?.productWiseSales || [];
+  const totalItemsSold = report?.totalItemsQuantitySold || 0;
+  const totalRevenue = report?.totalInvoicesAmount || 0;
 
   return (
     <View style={styles.container}>
@@ -82,10 +138,13 @@ export default function ReportsScreen() {
         </View>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
+          onPress={() => {
+            setSelectedFilter(appliedFilter);
+            setShowFilterModal(true);
+          }}
         >
           <Ionicons name="filter" size={20} color={BrandColors.primary} />
-          <Text style={styles.filterText}>{selectedFilter}</Text>
+          <Text style={styles.filterText}>{appliedFilter}</Text>
         </TouchableOpacity>
       </View>
 
@@ -104,24 +163,58 @@ export default function ReportsScreen() {
 
         <Text style={styles.sectionTitle}>Items Breakdown</Text>
 
-        {mockSoldItems.map((item) => (
-          <View key={item.id} style={styles.itemCard}>
-            <View style={styles.itemIcon}>
-              <Ionicons
-                name="fast-food"
-                size={24}
-                color={BrandColors.primary}
-              />
-            </View>
-            <View style={styles.itemInfo}>
-              <Text style={styles.itemTitle}>{item.name}</Text>
-              <Text style={styles.itemQty}>{item.quantity} sold</Text>
-            </View>
-            <View style={styles.itemAmountContainer}>
-              <Text style={styles.itemAmount}>₹{item.total}</Text>
-            </View>
+        {isLoading ? (
+          <View style={styles.centerSection}>
+            <ActivityIndicator size="large" color={BrandColors.primary} />
+            <Text style={styles.centerText}>Loading report...</Text>
           </View>
-        ))}
+        ) : isError ? (
+          <View style={styles.centerSection}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={56}
+              color={BrandColors.danger}
+            />
+            <Text style={styles.centerText}>Could not load report</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={() => refetch()}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : productSales.length === 0 ? (
+          <View style={styles.centerSection}>
+            <Ionicons
+              name="bar-chart-outline"
+              size={56}
+              color={BrandColors.gray[300]}
+            />
+            <Text style={styles.centerText}>No sales found for this period</Text>
+          </View>
+        ) : (
+          productSales.map((item) => (
+            <View key={item.productId} style={styles.itemCard}>
+              {item.productImage ? (
+                <Image source={{ uri: item.productImage }} style={styles.itemImage} />
+              ) : (
+                <View style={styles.itemIcon}>
+                  <Ionicons
+                    name="fast-food"
+                    size={24}
+                    color={BrandColors.primary}
+                  />
+                </View>
+              )}
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemTitle}>{item.productName}</Text>
+                <Text style={styles.itemQty}>{item.quantitySold} sold</Text>
+              </View>
+              <View style={styles.itemAmountContainer}>
+                <Text style={styles.itemAmount}>
+                  ₹{item.salesAmount.toLocaleString("en-IN")}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
 
       <Modal visible={showFilterModal} transparent animationType="slide">
@@ -172,6 +265,9 @@ export default function ReportsScreen() {
                     onChangeText={setFromDate}
                     placeholder="2026-01-01"
                   />
+                  {!!fromDateError && (
+                    <Text style={styles.errorText}>{fromDateError}</Text>
+                  )}
                   <Text style={styles.inputLabel}>To Date (YYYY-MM-DD)</Text>
                   <TextInput
                     style={styles.input}
@@ -179,6 +275,9 @@ export default function ReportsScreen() {
                     onChangeText={setToDate}
                     placeholder="2026-12-31"
                   />
+                  {!!toDateError && (
+                    <Text style={styles.errorText}>{toDateError}</Text>
+                  )}
                   <TouchableOpacity
                     style={styles.applyButton}
                     onPress={applyCustomFilter}
@@ -240,6 +339,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.lg,
     paddingTop: 0,
+    flexGrow: 1,
   },
   summaryCard: {
     flexDirection: "row",
@@ -279,11 +379,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.md,
     alignItems: "center",
-    shadowColor: BrandColors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Shadows.sm,
   },
   itemIcon: {
     width: 48,
@@ -292,6 +388,12 @@ const styles = StyleSheet.create({
     backgroundColor: BrandColors.accent + "15",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: Spacing.md,
+  },
+  itemImage: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
     marginRight: Spacing.md,
   },
   itemInfo: {
@@ -314,6 +416,28 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.lg,
     fontWeight: "700",
     color: BrandColors.gray[900],
+  },
+  centerSection: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.xxl,
+  },
+  centerText: {
+    fontSize: FontSizes.md,
+    color: BrandColors.gray[500],
+    marginTop: Spacing.sm,
+    fontWeight: "600",
+  },
+  retryButton: {
+    marginTop: Spacing.md,
+    backgroundColor: BrandColors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  retryButtonText: {
+    color: BrandColors.white,
+    fontWeight: "600",
   },
   modalBg: {
     flex: 1,
@@ -377,6 +501,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     padding: Spacing.sm,
     fontSize: FontSizes.md,
+  },
+  errorText: {
+    color: BrandColors.danger,
+    fontSize: FontSizes.xs,
+    marginTop: 4,
   },
   applyButton: {
     backgroundColor: BrandColors.primary,

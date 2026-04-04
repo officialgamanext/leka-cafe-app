@@ -16,4 +16,7 @@ export const QUERY_KEYS = {
   // Dashboard
   DASHBOARD: 'dashboard',
   DASHBOARD_WEEKLY_PROGRESS: 'dashboardWeeklyProgress',
+
+  // Reports
+  PRODUCT_SALES_REPORT: 'productSalesReport',
 };
