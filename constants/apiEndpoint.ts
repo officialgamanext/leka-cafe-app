@@ -16,6 +16,7 @@ export const APIEndpoints = {
   },
   dashboard: {
     summary: "/tenants/:tenantId/dashboard/summary",
+    weeklyProgress: "/tenants/:tenantId/dashboard/weekly-progress",
   },
   products: {
     list: "/tenants/:tenantId/products",

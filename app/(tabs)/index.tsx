@@ -6,7 +6,7 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
-import { useApiDashboard } from "@/hooks/use-api-dashboard";
+import { useApiDashboard, useApiDashboardWeeklyProgress } from "@/hooks/use-api-dashboard";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
@@ -26,6 +26,7 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { currentBusiness } = useAuth();
   const { data, isLoading, refetch } = useApiDashboard({ tenantId: currentBusiness?.id || "" });
+  const { data: weeklyData, refetch: refetchWeekly } = useApiDashboardWeeklyProgress({ tenantId: currentBusiness?.id || "" });
 
   const subInfo = {
     label: "Professional Plan",
@@ -33,16 +34,29 @@ export default function DashboardScreen() {
     color: BrandColors.success,
   };
 
-  const customBarData = [
-    { label: "Mon", value: 450, color: BrandColors.primary },
-    { label: "Tue", value: 320, color: BrandColors.primaryLight },
-    { label: "Wed", value: 580, color: BrandColors.primary },
-    { label: "Thu", value: 290, color: BrandColors.primaryLight },
-    { label: "Fri", value: 640, color: BrandColors.accent },
-    { label: "Sat", value: 890, color: BrandColors.accent },
-    { label: "Sun", value: 720, color: BrandColors.accent },
+  const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const WEEKDAY_COLORS = [
+    BrandColors.primary,
+    BrandColors.primaryLight,
+    BrandColors.primary,
+    BrandColors.primaryLight,
+    BrandColors.accent,
+    BrandColors.accent,
+    BrandColors.accent,
   ];
-  const maxBarValue = Math.max(...customBarData.map((b) => b.value));
+
+  const customBarData = (weeklyData?.dailyBreakdown ?? []).map((item) => ({
+    label: DAY_LABELS[new Date(item.date).getDay()],
+    value: item.salesAmount,
+    color: WEEKDAY_COLORS[new Date(item.date).getDay()],
+  }));
+
+  const maxBarValue = Math.max(...customBarData.map((b) => b.value), 1);
+
+  const weeklyTrend = weeklyData?.trend ?? "neutral";
+  const weeklyPct = weeklyData?.percentageChange ?? 0;
+  const trendIcon = weeklyTrend === "up" ? "trending-up" : weeklyTrend === "down" ? "trending-down" : "remove-outline";
+  const trendColor = weeklyTrend === "up" ? BrandColors.success : weeklyTrend === "down" ? BrandColors.danger : BrandColors.gray[400];
 
   if (isLoading || !data) {
     return (
@@ -86,7 +100,7 @@ export default function DashboardScreen() {
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={BrandColors.primary} />}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={() => { refetch(); refetchWeekly(); }} tintColor={BrandColors.primary} />}
       >
         {/* Modern Statistics Cards */}
         <View style={styles.statsGrid}>
@@ -161,9 +175,11 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Weekly Performance</Text>
-            <View style={styles.performanceBadge}>
-                <Ionicons name="trending-up" size={12} color={BrandColors.success} />
-                <Text style={styles.performanceBadgeText}>+12.4%</Text>
+            <View style={[styles.performanceBadge, { backgroundColor: trendColor + "10" }]}>
+                <Ionicons name={trendIcon as any} size={12} color={trendColor} />
+                <Text style={[styles.performanceBadgeText, { color: trendColor }]}>
+                  {weeklyTrend === "down" ? "-" : weeklyTrend === "up" ? "+" : ""}{weeklyPct}%
+                </Text>
             </View>
           </View>
           <View style={styles.analyticsSheet}>

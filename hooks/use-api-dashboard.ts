@@ -40,3 +40,41 @@ export const useApiDashboard = ({ tenantId, enabled = true, ...options }: UseDas
     ...options,
   });
 };
+
+// --- Weekly Progress ---
+
+export interface WeeklyProgressDailyItem {
+  date: string;
+  salesAmount: number;
+  ordersCount: number;
+}
+
+export interface WeeklyProgressData {
+  currentWeekTotal: number;
+  previousWeekTotal: number;
+  percentageChange: number;
+  trend: 'up' | 'down' | 'neutral';
+  dailyBreakdown: WeeklyProgressDailyItem[];
+}
+
+const fetchWeeklyProgress = async (tenantId: string): Promise<WeeklyProgressData> => {
+  const { data } = await apiClient.get<ApiResponse>(
+    APIEndpoints.dashboard.weeklyProgress.replace(':tenantId', tenantId)
+  );
+  return data.data;
+};
+
+interface UseWeeklyProgressOptions extends Omit<UseQueryOptions<WeeklyProgressData, Error>, 'queryKey' | 'queryFn'> {
+  enabled?: boolean;
+  tenantId?: string;
+}
+
+export const useApiDashboardWeeklyProgress = ({ tenantId, enabled = true, ...options }: UseWeeklyProgressOptions = {}) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.DASHBOARD_WEEKLY_PROGRESS, tenantId],
+    queryFn: () => fetchWeeklyProgress(tenantId || ''),
+    staleTime: 1000 * 60 * 5,
+    enabled: enabled && !!tenantId,
+    ...options,
+  });
+};
