@@ -171,6 +171,29 @@ export default function ProfileScreen() {
     setEditCountry(currentBusiness?.address?.country || "");
   }, [currentBusiness, getCurrentBusinessRole]);
 
+  useEffect(() => {
+    const nextTaxRate = currentBusiness?.defaultTaxRate;
+    const nextTaxMethod =
+      currentBusiness?.defaultTaxComputationMethod || "exclusive";
+
+    if (nextTaxRate !== undefined && nextTaxRate !== null) {
+      const nextTaxRateString = nextTaxRate.toString();
+      setTaxPercentage(nextTaxRateString);
+      if (!showTaxModal) {
+        setTempTaxPercentage(nextTaxRateString);
+      }
+    }
+
+    setTaxComputationMethod(nextTaxMethod);
+    if (!showTaxModal) {
+      setTempTaxComputationMethod(nextTaxMethod);
+    }
+  }, [
+    currentBusiness?.defaultTaxRate,
+    currentBusiness?.defaultTaxComputationMethod,
+    showTaxModal,
+  ]);
+
   const discoverPrinters = async () => {
     try {
       setIsDiscovering(true);
@@ -341,6 +364,7 @@ export default function ProfileScreen() {
           selectBusiness({
             ...currentBusiness,
             defaultTaxRate: taxValue,
+            defaultTaxComputationMethod: tempTaxComputationMethod,
           });
           setTaxPercentage(tempTaxPercentage);
           setTaxComputationMethod(tempTaxComputationMethod);
