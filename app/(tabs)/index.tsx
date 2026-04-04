@@ -217,7 +217,7 @@ export default function DashboardScreen() {
                     <Ionicons name="checkmark-circle" size={18} color={BrandColors.success} />
                   </View>
                   <View style={styles.logBody}>
-                     <Text style={styles.logTitle}>Bill #{(order.id || "000").slice(-6)}</Text>
+                     <Text style={styles.logTitle}>Bill #{(order.friendlyId || "000").slice(-6)}</Text>
                      <Text style={styles.logMeta}>{order.createdAt}</Text>
                   </View>
                   <View style={styles.logPriceBox}>

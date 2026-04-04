@@ -125,6 +125,7 @@ export interface Invoice {
   status: "paid" | "pending" | "cancelled";
   userId?: string; // Billed by
   createdAt: string;
+  friendlyId: string;
 }
 
 export enum Roles {
