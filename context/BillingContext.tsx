@@ -218,9 +218,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
   };
 
   const calculateTotal = () => {
+    const currentTaxRate = currentBusiness?.defaultTaxRate || 0;
+    const currentTaxComputationMethod = currentBusiness?.defaultTaxComputationMethod || "exclusive";
+
     const subtotal = billItems.reduce((sum, bi) => sum + bi.subtotal, 0);
-    const tax = subtotal * 0.05; // 5% tax
-    const total = subtotal + tax;
+    const tax = subtotal * (currentTaxRate / 100); // Apply current tax rate
+    const total = currentTaxComputationMethod === "inclusive" ? subtotal : subtotal + tax;
     return { subtotal, tax, total };
   };
 

@@ -1,4 +1,5 @@
 import { SkeletonBusinessList } from "@/components/skeleton-business-card";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 import {
   BorderRadius,
   BrandColors,
@@ -10,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUpdateApiTenant } from "@/hooks/use-api-tenants";
 import { requestPrinterPermissions } from "@/hooks/use-permissions";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -103,6 +105,12 @@ export default function ProfileScreen() {
   const [tempTaxPercentage, setTempTaxPercentage] = useState<string>(
     currentBusiness?.defaultTaxRate?.toString() || "0" || "0",
   );
+  const [taxComputationMethod, setTaxComputationMethod] = useState<"inclusive" | "exclusive">(
+    currentBusiness?.defaultTaxComputationMethod || "exclusive",
+  );
+  const [tempTaxComputationMethod, setTempTaxComputationMethod] = useState<"inclusive" | "exclusive">(
+    currentBusiness?.defaultTaxComputationMethod || "exclusive",
+  );
   const [connectedPrinter, setConnectedPrinter] = useState<IBLEPrinter | null>(
     null,
   );
@@ -141,6 +149,8 @@ export default function ProfileScreen() {
 
   const { mutate: updateTenant, isPending: isUpdatingTenant } =
     useUpdateApiTenant();
+  
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (showPrinterModal) {
@@ -321,6 +331,7 @@ export default function ProfileScreen() {
       logoUrl: currentBusiness.logo || "/logo.png",
       defaultTaxRate: taxValue,
       leagalInfo: currentBusiness.leagalInfo,
+      defaultTaxComputationMethod: tempTaxComputationMethod,
     };
 
     updateTenant(
@@ -332,8 +343,10 @@ export default function ProfileScreen() {
             defaultTaxRate: taxValue,
           });
           setTaxPercentage(tempTaxPercentage);
+          setTaxComputationMethod(tempTaxComputationMethod);
           setShowTaxModal(false);
           Alert.alert("Success", "Tax percentage updated successfully");
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENANTS] });
         },
         onError: (error) => {
           Alert.alert("Error", error.message || "Failed to update tax");
@@ -494,6 +507,7 @@ export default function ProfileScreen() {
               subtitle={`${taxPercentage}% tax configured`}
               onPress={() => {
                 setTempTaxPercentage(taxPercentage);
+                setTempTaxComputationMethod(taxComputationMethod);
                 setShowTaxModal(true);
               }}
             />
@@ -910,7 +924,7 @@ export default function ProfileScreen() {
         <View style={styles.taxModalOverlay}>
           <View style={styles.taxModalContent}>
             <View style={styles.taxModalHeader}>
-              <Text style={styles.taxModalTitle}>Set Tax Percentage</Text>
+              <Text style={styles.taxModalTitle}>Tax Configuration</Text>
               <TouchableOpacity
                 onPress={() => setShowTaxModal(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -939,6 +953,51 @@ export default function ProfileScreen() {
               </View>
               <Text style={styles.taxInputHint}>
                 Enter a value between 0 and 100
+              </Text>
+            </View>
+
+            <View style={styles.taxModalBody}>
+              <Text style={styles.taxInputLabel}>Tax Computation Method</Text>
+              <View style={styles.taxSegmentContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.taxSegmentButton,
+                    tempTaxComputationMethod === "exclusive" && styles.taxSegmentButtonActive,
+                  ]}
+                  onPress={() => setTempTaxComputationMethod("exclusive")}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.taxSegmentButtonText,
+                      tempTaxComputationMethod === "exclusive" && styles.taxSegmentButtonTextActive,
+                    ]}
+                  >
+                    Exclusive
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.taxSegmentButton,
+                    tempTaxComputationMethod === "inclusive" && styles.taxSegmentButtonActive,
+                  ]}
+                  onPress={() => setTempTaxComputationMethod("inclusive")}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.taxSegmentButtonText,
+                      tempTaxComputationMethod === "inclusive" && styles.taxSegmentButtonTextActive,
+                    ]}
+                  >
+                    Inclusive
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.taxInputHint}>
+                {tempTaxComputationMethod === "inclusive"
+                  ? "Tax is included in the listed price."
+                  : "Tax is added on top of the listed price."}
               </Text>
             </View>
 
@@ -1517,6 +1576,32 @@ const styles = StyleSheet.create({
   taxModalSaveButtonText: {
     fontSize: FontSizes.md,
     fontWeight: "600",
+    color: BrandColors.white,
+  },
+  taxSegmentContainer: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    marginBottom: Spacing.sm,
+  },
+  taxSegmentButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm + 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BrandColors.gray[50],
+  },
+  taxSegmentButtonActive: {
+    backgroundColor: BrandColors.primary,
+  },
+  taxSegmentButtonText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[600],
+  },
+  taxSegmentButtonTextActive: {
     color: BrandColors.white,
   },
 });

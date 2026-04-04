@@ -174,7 +174,7 @@ export default function BillingScreen() {
       const subtotalLine =
         "Subtotal".padEnd(20) + `Rs.${subtotal.toFixed(2)}`.padStart(10);
       const taxLine =
-        "Tax (5%)".padEnd(20) + `Rs.${tax.toFixed(2)}`.padStart(10);
+        `Tax (${currentBusiness?.defaultTaxRate || 0}%) ${currentBusiness?.defaultTaxComputationMethod || "exclusive"}`.padEnd(20) + `Rs.${tax.toFixed(2)}`.padStart(10);
       const totalLineText =
         "Total".padEnd(20) + `Rs.${total.toFixed(2)}`.padStart(10);
 
@@ -494,7 +494,7 @@ export default function BillingScreen() {
                     </Text>
                   </View>
                   <View style={styles.totalRow}>
-                    <Text style={styles.totalLabel}>Tax (5%)</Text>
+                    <Text style={styles.totalLabel}>Tax ({currentBusiness?.defaultTaxRate || 0}% {currentBusiness?.defaultTaxComputationMethod || "exclusive"})</Text>
                     <Text style={styles.totalValue}>Rs.{tax.toFixed(2)}</Text>
                   </View>
                   <View style={[styles.totalRow, styles.grandTotalRow]}>

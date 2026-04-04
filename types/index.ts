@@ -33,6 +33,7 @@ export interface Business {
     panNumber?: string;
   };
   defaultTaxRate?: number;
+  defaultTaxComputationMethod?: "inclusive" | "exclusive";
   subscription: {
     status: Boolean;
     endDate?: Date;
