@@ -129,6 +129,7 @@ export const useCreateInvoice = () => {
       createInvoice(tenantId, invoice),
     onSuccess: (_, { tenantId }) => {
       queryClient.invalidateQueries({ queryKey: [ QUERY_KEYS.DASHBOARD, tenantId] });
+      queryClient.invalidateQueries({ queryKey: [ QUERY_KEYS.DASHBOARD_WEEKLY_PROGRESS, tenantId] });
       queryClient.invalidateQueries({ queryKey: [ QUERY_KEYS.INVOICES, tenantId] });
     },
     onError: (error) => {

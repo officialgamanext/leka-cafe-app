@@ -33,6 +33,13 @@ export interface Business {
     panNumber?: string;
   };
   defaultTaxRate?: number;
+  defaultTaxComputationMethod?: "inclusive" | "exclusive";
+  printSettings?: {
+    showAddress: boolean;
+    showThankyou: boolean;
+    showPhone: boolean;
+    showTax: boolean;
+  };
   subscription: {
     status: Boolean;
     endDate?: Date;
@@ -118,6 +125,7 @@ export interface Invoice {
   status: "paid" | "pending" | "cancelled";
   userId?: string; // Billed by
   createdAt: string;
+  friendlyId: string;
 }
 
 export enum Roles {

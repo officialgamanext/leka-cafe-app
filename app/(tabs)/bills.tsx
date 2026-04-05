@@ -173,7 +173,7 @@ export default function AllBillsScreen() {
               </View>
               <View style={styles.cardBody}>
                 <View style={styles.cardHeader}>
-                   <Text style={styles.cardId} numberOfLines={1}>#{(bill.id || "000").slice(-6)}</Text>
+                   <Text style={styles.cardId} numberOfLines={1}>#{(bill.friendlyId || "000").slice(-6)}</Text>
                    <View style={styles.cardBadge}>
                       <Text style={styles.cardBadgeText}>{bill.status || "PAID"}</Text>
                    </View>

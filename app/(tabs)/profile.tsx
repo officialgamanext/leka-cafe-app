@@ -1,4 +1,5 @@
 import { SkeletonBusinessList } from "@/components/skeleton-business-card";
+import { QUERY_KEYS } from "@/constants/queryKeys";
 import {
   BorderRadius,
   BrandColors,
@@ -10,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUpdateApiTenant } from "@/hooks/use-api-tenants";
 import { requestPrinterPermissions } from "@/hooks/use-permissions";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -96,12 +98,25 @@ export default function ProfileScreen() {
   } = useAuth();
   const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [showTaxModal, setShowTaxModal] = useState(false);
+  const [showPrintSettingsModal, setShowPrintSettingsModal] = useState(false);
+  const [tempPrintSettings, setTempPrintSettings] = useState({
+    showAddress: currentBusiness?.printSettings?.showAddress ?? true,
+    showThankyou: currentBusiness?.printSettings?.showThankyou ?? true,
+    showPhone: currentBusiness?.printSettings?.showPhone ?? true,
+    showTax: currentBusiness?.printSettings?.showTax ?? true,
+  });
   const [printers, setPrinters] = useState<IBLEPrinter[]>([]);
   const [taxPercentage, setTaxPercentage] = useState<string>(
     currentBusiness?.defaultTaxRate?.toString() || "0" || "0",
   );
   const [tempTaxPercentage, setTempTaxPercentage] = useState<string>(
     currentBusiness?.defaultTaxRate?.toString() || "0" || "0",
+  );
+  const [taxComputationMethod, setTaxComputationMethod] = useState<"inclusive" | "exclusive">(
+    currentBusiness?.defaultTaxComputationMethod || "exclusive",
+  );
+  const [tempTaxComputationMethod, setTempTaxComputationMethod] = useState<"inclusive" | "exclusive">(
+    currentBusiness?.defaultTaxComputationMethod || "exclusive",
   );
   const [connectedPrinter, setConnectedPrinter] = useState<IBLEPrinter | null>(
     null,
@@ -141,6 +156,8 @@ export default function ProfileScreen() {
 
   const { mutate: updateTenant, isPending: isUpdatingTenant } =
     useUpdateApiTenant();
+  
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (showPrinterModal) {
@@ -160,6 +177,40 @@ export default function ProfileScreen() {
     setEditPostalCode(currentBusiness?.address?.postalCode || "");
     setEditCountry(currentBusiness?.address?.country || "");
   }, [currentBusiness, getCurrentBusinessRole]);
+
+  useEffect(() => {
+    const nextTaxRate = currentBusiness?.defaultTaxRate;
+    const nextTaxMethod =
+      currentBusiness?.defaultTaxComputationMethod || "exclusive";
+
+    if (nextTaxRate !== undefined && nextTaxRate !== null) {
+      const nextTaxRateString = nextTaxRate.toString();
+      setTaxPercentage(nextTaxRateString);
+      if (!showTaxModal) {
+        setTempTaxPercentage(nextTaxRateString);
+      }
+    }
+
+    setTaxComputationMethod(nextTaxMethod);
+    if (!showTaxModal) {
+      setTempTaxComputationMethod(nextTaxMethod);
+    }
+
+    if (!showPrintSettingsModal) {
+      setTempPrintSettings({
+        showAddress: currentBusiness?.printSettings?.showAddress ?? true,
+        showThankyou: currentBusiness?.printSettings?.showThankyou ?? true,
+        showPhone: currentBusiness?.printSettings?.showPhone ?? true,
+        showTax: currentBusiness?.printSettings?.showTax ?? true,
+      });
+    }
+  }, [
+    currentBusiness?.defaultTaxRate,
+    currentBusiness?.defaultTaxComputationMethod,
+    currentBusiness?.printSettings,
+    showTaxModal,
+    showPrintSettingsModal,
+  ]);
 
   const discoverPrinters = async () => {
     try {
@@ -321,6 +372,7 @@ export default function ProfileScreen() {
       logoUrl: currentBusiness.logo || "/logo.png",
       defaultTaxRate: taxValue,
       leagalInfo: currentBusiness.leagalInfo,
+      defaultTaxComputationMethod: tempTaxComputationMethod,
     };
 
     updateTenant(
@@ -330,13 +382,51 @@ export default function ProfileScreen() {
           selectBusiness({
             ...currentBusiness,
             defaultTaxRate: taxValue,
+            defaultTaxComputationMethod: tempTaxComputationMethod,
           });
           setTaxPercentage(tempTaxPercentage);
+          setTaxComputationMethod(tempTaxComputationMethod);
           setShowTaxModal(false);
           Alert.alert("Success", "Tax percentage updated successfully");
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENANTS] });
         },
         onError: (error) => {
           Alert.alert("Error", error.message || "Failed to update tax");
+        },
+      },
+    );
+  };
+
+  const handleSavePrintSettings = () => {
+    if (!currentBusiness?.id) {
+      Alert.alert("Business not selected", "Please select a business first.");
+      return;
+    }
+
+    const payload = {
+      name: currentBusiness.name,
+      address: currentBusiness.address,
+      logoUrl: currentBusiness.logo || "/logo.png",
+      defaultTaxRate: currentBusiness.defaultTaxRate,
+      leagalInfo: currentBusiness.leagalInfo,
+      defaultTaxComputationMethod: currentBusiness.defaultTaxComputationMethod,
+      printSettings: tempPrintSettings,
+    };
+
+    updateTenant(
+      { tenantId: currentBusiness.id, payload },
+      {
+        onSuccess: () => {
+          selectBusiness({
+            ...currentBusiness,
+            printSettings: tempPrintSettings,
+          });
+          setShowPrintSettingsModal(false);
+          Alert.alert("Success", "Print settings updated successfully");
+          queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.TENANTS] });
+        },
+        onError: (error) => {
+          Alert.alert("Error", error.message || "Failed to update print settings");
         },
       },
     );
@@ -494,6 +584,7 @@ export default function ProfileScreen() {
               subtitle={`${taxPercentage}% tax configured`}
               onPress={() => {
                 setTempTaxPercentage(taxPercentage);
+                setTempTaxComputationMethod(taxComputationMethod);
                 setShowTaxModal(true);
               }}
             />
@@ -502,6 +593,12 @@ export default function ProfileScreen() {
               label="Printer setup"
               subtitle="Configure receipt printer"
               onPress={handlePrinterSetup}
+            />
+            <MenuItem
+              icon="receipt-outline"
+              label="Print Settings"
+              subtitle="Customise receipt print options"
+              onPress={() => setShowPrintSettingsModal(true)}
             />
           </View>
         </View>
@@ -900,6 +997,88 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* Print Settings Modal */}
+      <Modal
+        visible={showPrintSettingsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPrintSettingsModal(false)}
+      >
+        <View style={styles.taxModalOverlay}>
+          <View style={styles.taxModalContent}>
+            <View style={styles.taxModalHeader}>
+              <Text style={styles.taxModalTitle}>Print Settings</Text>
+              <TouchableOpacity
+                onPress={() => setShowPrintSettingsModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={24} color={BrandColors.gray[700]} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.taxModalBody}>
+              <Text style={styles.printSettingsHint}>
+                Choose what to show on printed receipts.
+              </Text>
+
+              {(
+                [
+                  { key: "showAddress", label: "Show Address" },
+                  { key: "showPhone", label: "Show Phone" },
+                  { key: "showTax", label: "Show Tax" },
+                  { key: "showThankyou", label: "Show Thank-you message" },
+                ] as const
+              ).map(({ key, label }) => (
+                <TouchableOpacity
+                  key={key}
+                  style={styles.printSettingsRow}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    setTempPrintSettings((prev) => ({
+                      ...prev,
+                      [key]: !prev[key],
+                    }))
+                  }
+                >
+                  <Text style={styles.printSettingsLabel}>{label}</Text>
+                  <View
+                    style={[
+                      styles.printSettingsToggle,
+                      tempPrintSettings[key] && styles.printSettingsToggleOn,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.printSettingsThumb,
+                        tempPrintSettings[key] && styles.printSettingsThumbOn,
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.taxModalActions}>
+              <TouchableOpacity
+                style={styles.taxModalCancelButton}
+                onPress={() => setShowPrintSettingsModal(false)}
+              >
+                <Text style={styles.taxModalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.taxModalSaveButton}
+                onPress={handleSavePrintSettings}
+                disabled={isUpdatingTenant}
+              >
+                <Text style={styles.taxModalSaveButtonText}>
+                  {isUpdatingTenant ? "Saving..." : "Apply"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Tax Percentage Modal */}
       <Modal
         visible={showTaxModal}
@@ -910,7 +1089,7 @@ export default function ProfileScreen() {
         <View style={styles.taxModalOverlay}>
           <View style={styles.taxModalContent}>
             <View style={styles.taxModalHeader}>
-              <Text style={styles.taxModalTitle}>Set Tax Percentage</Text>
+              <Text style={styles.taxModalTitle}>Tax Configuration</Text>
               <TouchableOpacity
                 onPress={() => setShowTaxModal(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -939,6 +1118,51 @@ export default function ProfileScreen() {
               </View>
               <Text style={styles.taxInputHint}>
                 Enter a value between 0 and 100
+              </Text>
+            </View>
+
+            <View style={styles.taxModalBody}>
+              <Text style={styles.taxInputLabel}>Tax Computation Method</Text>
+              <View style={styles.taxSegmentContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.taxSegmentButton,
+                    tempTaxComputationMethod === "exclusive" && styles.taxSegmentButtonActive,
+                  ]}
+                  onPress={() => setTempTaxComputationMethod("exclusive")}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.taxSegmentButtonText,
+                      tempTaxComputationMethod === "exclusive" && styles.taxSegmentButtonTextActive,
+                    ]}
+                  >
+                    Exclusive
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.taxSegmentButton,
+                    tempTaxComputationMethod === "inclusive" && styles.taxSegmentButtonActive,
+                  ]}
+                  onPress={() => setTempTaxComputationMethod("inclusive")}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.taxSegmentButtonText,
+                      tempTaxComputationMethod === "inclusive" && styles.taxSegmentButtonTextActive,
+                    ]}
+                  >
+                    Inclusive
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.taxInputHint}>
+                {tempTaxComputationMethod === "inclusive"
+                  ? "Tax is included in the listed price."
+                  : "Tax is added on top of the listed price."}
               </Text>
             </View>
 
@@ -1518,5 +1742,76 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     fontWeight: "600",
     color: BrandColors.white,
+  },
+  taxSegmentContainer: {
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: BrandColors.gray[300],
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    marginBottom: Spacing.sm,
+  },
+  taxSegmentButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm + 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: BrandColors.gray[50],
+  },
+  taxSegmentButtonActive: {
+    backgroundColor: BrandColors.primary,
+  },
+  taxSegmentButtonText: {
+    fontSize: FontSizes.md,
+    fontWeight: "600",
+    color: BrandColors.gray[600],
+  },
+  taxSegmentButtonTextActive: {
+    color: BrandColors.white,
+  },
+  /* ─── Print Settings Modal Styles ─── */
+  printSettingsHint: {
+    fontSize: FontSizes.sm,
+    color: BrandColors.gray[500],
+    marginBottom: Spacing.lg,
+  },
+  printSettingsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: BrandColors.gray[100],
+  },
+  printSettingsLabel: {
+    fontSize: FontSizes.md,
+    fontWeight: "500",
+    color: BrandColors.gray[800],
+  },
+  printSettingsToggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: BrandColors.gray[300],
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  printSettingsToggleOn: {
+    backgroundColor: BrandColors.primary,
+  },
+  printSettingsThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: BrandColors.white,
+    shadowColor: BrandColors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+    alignSelf: "flex-start",
+  },
+  printSettingsThumbOn: {
+    alignSelf: "flex-end",
   },
 });

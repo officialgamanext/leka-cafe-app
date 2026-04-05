@@ -1,6 +1,7 @@
 export const QUERY_KEYS = {
   // Auth
   TENANTS: 'tenants',
+  TENANT_USERS: 'tenantUsers',
   
   // Products/Menu Items
   PRODUCTS: 'products',
@@ -14,4 +15,8 @@ export const QUERY_KEYS = {
   
   // Dashboard
   DASHBOARD: 'dashboard',
+  DASHBOARD_WEEKLY_PROGRESS: 'dashboardWeeklyProgress',
+
+  // Reports
+  PRODUCT_SALES_REPORT: 'productSalesReport',
 };
